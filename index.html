@@ -413,7 +413,9 @@
           if (data.length < step) break;
           start += step; end += step;
         }
-        allEmp.forEach(e => { mapaEmpregados[e.matricula] = { cargo: e.cargo, filial: e.filial }; });
+        allEmp.forEach(e => { 
+          mapaEmpregados[String(e.matricula).trim()] = { cargo: e.cargo, filial: String(e.filial || "1") }; 
+        });
 
         let allAtest = [];
         start = 0; end = 999;
@@ -424,11 +426,30 @@
           if (data.length < step) break;
           start += step; end += step;
         }
-        dadosAtestados = allAtest.map(d => ({
-          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave || mapearChaveLoja(d.filial), setor: d.setor || MapearSetorPorCargo(d.cargo),
-          dias: Number(d.dias), horas: Number(d.horas), cid: d.cid, postoAtendimento: d.posto_atendimento, atendente: d.atendente,
-          dataEmissao: d.data_emissao, dataTermino: d.data_termino, ano: String(d.ano || ''), mes: String(d.mes || '')
-        }));
+
+        dadosAtestados = allAtest.map(d => {
+          const mat = String(d.matricula || "").trim();
+          let filialOrigem = d.filial || d.loja_chave || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1");
+          let lojaChave = mapearChaveLoja(filialOrigem);
+
+          return {
+            matricula: mat,
+            nome: d.nome || "Colaborador",
+            cargo: d.cargo || (mapaEmpregados[mat] ? mapaEmpregados[mat].cargo : ""),
+            filial: filialOrigem,
+            lojaChave: lojaChave,
+            setor: d.setor || MapearSetorPorCargo(d.cargo || (mapaEmpregados[mat] ? mapaEmpregados[mat].cargo : "")),
+            dias: Number(d.dias) || 0,
+            horas: Number(d.horas) || 0,
+            cid: d.cid ? String(d.cid).trim().toUpperCase() : "SEM CID",
+            postoAtendimento: d.posto_atendimento || "Não Informado",
+            atendente: d.atendente || "Profissional",
+            dataEmissao: d.data_emissao || "N/A",
+            dataTermino: d.data_termino || "N/A",
+            ano: String(d.ano || ''),
+            mes: String(d.mes || '')
+          };
+        });
 
         let allAtend = [];
         start = 0; end = 999;
@@ -439,10 +460,22 @@
           if (data.length < step) break;
           start += step; end += step;
         }
-        dadosAtendimentos = allAtend.map(d => ({
-          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave || mapearChaveLoja(d.filial),
-          data: d.data, ano: String(d.ano || ''), mes: String(d.mes || ''), tipoExame: d.tipo_exame, posto: d.posto
-        }));
+        dadosAtendimentos = allAtend.map(d => {
+          const mat = String(d.matricula || "").trim();
+          let filialOrigem = d.filial || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1");
+          return {
+            matricula: mat,
+            nome: d.nome || "Colaborador",
+            cargo: d.cargo || "",
+            filial: filialOrigem,
+            lojaChave: mapearChaveLoja(filialOrigem),
+            data: d.data || "N/A",
+            ano: String(d.ano || ''),
+            mes: String(d.mes || ''),
+            tipoExame: d.tipo_exame || "Exame Ocupacional",
+            posto: d.posto || "Ambulatório"
+          };
+        });
 
         dadosFiltradosAtestados = [...dadosAtestados];
         dadosFiltradosAtendimentos = [...dadosAtendimentos];
@@ -480,12 +513,12 @@
               const ficha = String(row["Ficha Médica"] || row["Matrícula"] || "").trim();
               const dtEmissaoRaw = row["Emissão Atestado"] || row["Data Emissão"] || "";
               const tempoAnoMes = extrairAnoEMes(dtEmissaoRaw);
-              const filialVal = row["Filial"] || row["Apelido (Filial)"] || "1";
+              const filialVal = String(row["Filial"] || row["Apelido (Filial)"] || "1");
               return {
                 matricula: ficha,
                 nome: row["Nome(Ficha Médica)"] || row["Nome"] || "Colaborador",
                 cargo: row["Cargo"] || "",
-                filial: String(filialVal),
+                filial: filialVal,
                 loja_chave: mapearChaveLoja(filialVal),
                 setor: MapearSetorPorCargo(row["Cargo"]),
                 dias: parseNumero(row["Tempo em Dias"] || row["Dias"] || 0),
@@ -504,12 +537,13 @@
             const rows = json.map(row => {
               const dtAtendRaw = row["Atendimento"] || row["Data Atendimento"] || "";
               const tempoAnoMes = extrairAnoEMes(dtAtendRaw);
+              const filialVal = String(row["Filial"] || "1");
               return {
                 matricula: String(row["Ficha Médica"] || row["Matrícula"] || "").trim(),
                 nome: row["Nome (Ficha Médica)"] || row["Nome"] || "Colaborador",
                 cargo: row["Cargo"] || "",
-                filial: String(row["Filial"] || "1"),
-                loja_chave: mapearChaveLoja(row["Filial"]),
+                filial: filialVal,
+                loja_chave: mapearChaveLoja(filialVal),
                 data: formatarData(dtAtendRaw),
                 ano: tempoAnoMes.ano,
                 mes: tempoAnoMes.mes,
@@ -587,12 +621,12 @@
 
     function mapearChaveLoja(filialRaw) {
       const str = String(filialRaw || "").trim().toUpperCase();
-      if (str.includes("8") || str.includes("LOJA 2") || str.includes("MATRIZ 2") || str.includes("FILIAL 2")) return "Loja 2";
-      if (str.includes("9") || str.includes("LOJA 3") || str.includes("MATRIZ 3") || str.includes("FILIAL 3")) return "Loja 3";
-      if (str.includes("10") || str.includes("LOJA 4") || str.includes("MATRIZ 4") || str.includes("FILIAL 4")) return "Loja 4";
-      if (str.includes("2") && !str.includes("8") && !str.includes("9") && !str.includes("10")) return "Loja 2";
-      if (str.includes("3") && !str.includes("9")) return "Loja 3";
-      if (str.includes("4") && !str.includes("10")) return "Loja 4";
+      if (str.includes("10") || str.includes("LOJA 4") || str.includes("MATRIZ 4")) return "Loja 4";
+      if (str.includes("9") || str.includes("LOJA 3") || str.includes("MATRIZ 3")) return "Loja 3";
+      if (str.includes("8") || str.includes("LOJA 2") || str.includes("MATRIZ 2")) return "Loja 2";
+      if (str === "2") return "Loja 2";
+      if (str === "3") return "Loja 3";
+      if (str === "4" || str === "10") return "Loja 4";
       return "Loja 1";
     }
 
@@ -834,7 +868,6 @@
       const mesesOrdenados = Object.keys(porMes).sort((a,b) => Number(a) - Number(b));
       const labels = mesesOrdenados.map(m => mesesMap[m] || m);
       const dataAtestados = mesesOrdenados.map(m => porMes[m].atestados);
-      const dataDias = mesesOrdenados.map(m => porMes[m].dias);
 
       charts.comparativo.data.labels = labels;
       charts.comparativo.data.datasets[0].data = dataAtestados;
@@ -894,6 +927,23 @@
       document.getElementById("listaAlertas").innerHTML = longos.length === 0 ? 
         `<div class="p-4 bg-[#0f172a] text-center text-xs text-slate-400">Nenhum alerta crítico.</div>` :
         longos.map(a => `<div class="p-3 bg-amber-950/60 border-l-4 border-amber-500 text-xs">Afastamento Longo (>15d): <strong>${a.nome}</strong> (Ficha: ${a.matricula}) — <strong>${a.dias} dias</strong> (CID: ${a.cid})</div>`).join('');
+    }
+
+    function exportarExcel() {
+      const ws = XLSX.utils.json_to_sheet(dadosFiltradosAtestados);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Atestados");
+      XLSX.writeFile(wb, "Indicadores_SESMT_Rondon.xlsx");
+    }
+
+    function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Relatorio de Indicadores - SESMT Rondon", 14, 15);
+      const cols = ["Crachá", "Colaborador", "Loja", "Setor", "Dias", "CID"];
+      const rows = dadosFiltradosAtestados.slice(0, 100).map(i => [i.matricula, i.nome, i.lojaChave, i.setor, i.dias, i.cid]);
+      doc.autoTable({ head: [cols], body: rows, startY: 25, styles: { fontSize: 8 } });
+      doc.save("Indicadores_SESMT_Rondon.pdf");
     }
 
     function alterarPerfil() {
