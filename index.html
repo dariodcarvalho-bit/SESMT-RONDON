@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Executivo de Medicina do Trabalho</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS para Parsing e Exportação Excel (.xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF & AutoTable para Exportação em PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .kpi-card { transition: all 0.2s ease-in-out; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08); }
+    .tab-active { border-bottom: 2px solid #0d9488; color: #0d9488; font-weight: 700; }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen flex flex-col">
+
+  <!-- CABEÇALHO / HEADER RBAC -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-teal-500 p-2 rounded-lg text-slate-900 font-bold">
+          <i data-lucide="activity"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold leading-tight">Medicina do Trabalho Executiva</h1>
+          <p class="text-xs text-slate-400">Plataforma de Saúde Ocupacional, PCMSO & Absenteísmo</p>
+        </div>
+      </div>
+
+      <!-- Ações de Perfil e Segurança -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center bg-slate-800 rounded-lg p-1 text-xs border border-slate-700">
+          <span class="px-2 text-slate-400 font-medium">Perfil RBAC:</span>
+          <select id="userRole" onchange="alterarPerfil()" class="bg-slate-900 text-teal-400 font-semibold rounded px-2 py-1 outline-none border border-slate-700">
+            <option value="ADM">ADM Geral (Master)</option>
+            <option value="MEDICO">Médico do Trabalho / Enfermagem</option>
+            <option value="GESTOR">Gestor / Operacional (Sem CID)</option>
+            <option value="LEITURA">Consulta / Leitura</option>
+          </select>
+        </div>
+
+        <button onclick="abrirModalReset()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Reset da Base
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVEGAÇÃO DE MÓDULOS -->
+  <nav class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 flex gap-6 text-xs font-medium text-slate-500">
+      <button onclick="mudarAba('dashboard')" id="tab-dashboard" class="py-3 tab-active flex items-center gap-1.5">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard Executivo
+      </button>
+      <button onclick="mudarAba('prontuario')" id="tab-prontuario" class="py-3 flex items-center gap-1.5">
+        <i data-lucide="user-check" class="w-4 h-4"></i> Prontuário por Matrícula
+      </button>
+      <button onclick="mudarAba('alertas')" id="tab-alertas" class="py-3 flex items-center gap-1.5 relative">
+        <i data-lucide="bell" class="w-4 h-4"></i> Alertas & Gatilhos Médicos
+        <span id="badgeAlertas" class="bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full hidden">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+    <!-- SEÇÃO: DASHBOARD -->
+    <div id="sec-dashboard" class="space-y-6">
+      
+      <!-- PAINEL DE IMPORTAÇÃO DE DADOS -->
+      <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="file-up" class="text-teal-600 w-4 h-4"></i> Ingestão Automática de Dados (Zero Digitação)
+            </h2>
+            <p class="text-xs text-slate-500">Importação e sincronização de planilhas ATENDIMENTO.xlsx e ATESTADO.xlsx</p>
+          </div>
+          <div id="statusCarga" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+            Dados demonstrativos carregados
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="border-2 border-dashed border-slate-200 hover:border-teal-500 rounded-lg p-3.5 flex items-center gap-3 cursor-pointer transition bg-slate-50/50 hover:bg-teal-50/30">
+            <div class="p-2.5 bg-teal-100 text-teal-700 rounded-lg"><i data-lucide="stethoscope" class="w-5 h-5"></i></div>
+            <div class="flex-1">
+              <span class="block text-xs font-bold text-slate-700">Carregar ATENDIMENTO.xlsx</span>
+              <span class="block text-[11px] text-slate-400">Exames Ocupacionais (Admissional, Periódico, etc.)</span>
+            </div>
+            <input type="file" accept=".xlsx, .xls" class="hidden" onchange="processarArquivo(event, 'ATENDIMENTO')" />
+          </label>
+
+          <label class="border-2 border-dashed border-slate-200 hover:border-teal-500 rounded-lg p-3.5 flex items-center gap-3 cursor-pointer transition bg-slate-50/50 hover:bg-teal-50/30">
+            <div class="p-2.5 bg-rose-100 text-rose-700 rounded-lg"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+            <div class="flex-1">
+              <span class="block text-xs font-bold text-slate-700">Carregar ATESTADO.xlsx</span>
+              <span class="block text-[11px] text-slate-400">Registros de Afastamento, CIDs e Horas Perdidas</span>
+            </div>
+            <input type="file" accept=".xlsx, .xls" class="hidden" onchange="processarArquivo(event, 'ATESTADO')" />
+          </label>
+        </div>
+      </section>
+
+      <!-- BARRA DE FILTROS GLOBAIS E EXPORTAÇÃO -->
+      <section class="bg-slate-900 text-white p-4 rounded-xl shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3 text-xs w-full lg:w-auto">
+          <span class="font-bold text-teal-400 flex items-center gap-1"><i data-lucide="filter" class="w-3.5 h-3.5"></i> Filtros Globais:</span>
+          
+          <select id="filtroSetor" onchange="aplicarFiltrosGlobais()" class="bg-slate-800 text-slate-200 rounded px-2.5 py-1.5 border border-slate-700 outline-none">
+            <option value="">Todos os Setores (Depara)</option>
+          </select>
+
+          <select id="filtroCID" onchange="aplicarFiltrosGlobais()" class="bg-slate-800 text-slate-200 rounded px-2.5 py-1.5 border border-slate-700 outline-none">
+            <option value="">Todas as CIDs</option>
+          </select>
+
+          <button onclick="limparFiltros()" class="text-slate-400 hover:text-white underline text-[11px]">Limpar Filtros</button>
+        </div>
+
+        <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+          <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Exportar Excel
+          </button>
+          <button onclick="exportarPDF()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Relatório PDF
+          </button>
+        </div>
+      </section>
+
+      <!-- KPIS PRINCIPAIS -->
+      <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="kpi-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-bold text-slate-400 uppercase block mb-1">Total Atestados</span>
+          <div class="flex justify-between items-baseline">
+            <span id="kpiTotalAtestados" class="text-2xl font-extrabold text-slate-900">0</span>
+            <i data-lucide="file-check" class="w-4 h-4 text-teal-600"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-bold text-slate-400 uppercase block mb-1">Dias Afastados</span>
+          <div class="flex justify-between items-baseline">
+            <span id="kpiTotalDias" class="text-2xl font-extrabold text-amber-600">0</span>
+            <i data-lucide="calendar" class="w-4 h-4 text-amber-500"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-bold text-slate-400 uppercase block mb-1">Horas Perdidas</span>
+          <div class="flex justify-between items-baseline">
+            <span id="kpiTotalHoras" class="text-2xl font-extrabold text-rose-600">0h</span>
+            <i data-lucide="clock" class="w-4 h-4 text-rose-500"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-bold text-slate-400 uppercase block mb-1">Afastados (Únicos)</span>
+          <div class="flex justify-between items-baseline">
+            <span id="kpiFuncAfastados" class="text-2xl font-extrabold text-indigo-600">0</span>
+            <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-bold text-slate-400 uppercase block mb-1">Índice Gravidade</span>
+          <div class="flex justify-between items-baseline">
+            <span id="kpiIndiceGravidade" class="text-2xl font-extrabold text-slate-900">0.0</span>
+            <i data-lucide="trending-up" class="w-4 h-4 text-teal-600"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-bold text-slate-400 uppercase block mb-1">Exames Ocupacionais</span>
+          <div class="flex justify-between items-baseline">
+            <span id="kpiExamesOcupacionais" class="text-2xl font-extrabold text-teal-600">0</span>
+            <i data-lucide="clipboard-check" class="w-4 h-4 text-teal-500"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- GRÁFICOS EPIDEMIOLÓGICOS E SETORIAIS -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <h3 class="text-xs font-bold text-slate-900 mb-4 flex items-center gap-2 uppercase tracking-wider">
+            <i data-lucide="building-2" class="text-teal-600 w-4 h-4"></i> Absenteísmo por Setor (Regra de Depara)
+          </h3>
+          <div class="relative flex-1 min-h-[250px]">
+            <canvas id="chartSetores"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xs font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
+              <i data-lucide="shield-alert" class="text-rose-600 w-4 h-4"></i> Distribuição por Diagnóstico (CID-10)
+            </h3>
+            <span id="tagSigiloCid" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+              Acesso Clínico
+            </span>
+          </div>
+          <div class="relative flex-1 min-h-[250px] flex items-center justify-center">
+            <canvas id="chartCid"></canvas>
+            <div id="lockCidMessage" class="hidden absolute inset-0 bg-slate-50/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center rounded-lg border border-slate-200">
+              <i data-lucide="lock" class="w-8 h-8 text-slate-400 mb-2"></i>
+              <p class="text-xs font-bold text-slate-700">Sigilo Médico Preservado (LGPD / CFM)</p>
+              <p class="text-[11px] text-slate-500 mt-1 max-w-xs">O perfil Gestor/Operacional acessa dados consolidados sem exposição dos códigos e diagnósticos de CIDs.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABELA DE DADOS -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wider">
+            <i data-lucide="database" class="w-4 h-4 text-slate-500"></i> Base de Atestados Processados
+          </h3>
+          <span id="contadorRegistros" class="text-xs font-semibold text-slate-500">0 registros</span>
+        </div>
+        <div class="overflow-x-auto max-h-80">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-slate-100 text-slate-600 font-semibold sticky top-0 border-b border-slate-200">
+              <tr>
+                <th class="p-3">Matrícula</th>
+                <th class="p-3">Colaborador</th>
+                <th class="p-3">Cargo Identificado</th>
+                <th class="p-3">Setor (Depara)</th>
+                <th class="p-3">Dias</th>
+                <th class="p-3">CID-10</th>
+                <th class="p-3">Médico Emissor</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaAtestadosBody" class="divide-y divide-slate-100 text-slate-700">
+              <tr>
+                <td colspan="7" class="p-6 text-center text-slate-400">Nenhum registro importado. Suba arquivos Excel acima.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- SEÇÃO: PRONTUARIO POR MATRÍCULA -->
+    <div id="sec-prontuario" class="hidden space-y-6">
+      <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="search" class="text-teal-600 w-4 h-4"></i> Localizar Ficha Médica / Colaborador
+        </h2>
+        <div class="flex gap-3">
+          <input type="text" id="buscaMatricula" placeholder="Digite a Matrícula (ex: 1001) ou Nome do Colaborador..." class="flex-1 text-xs p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500" />
+          <button onclick="buscarProntuario()" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="user-search" class="w-4 h-4"></i> Visualizar Histórico
+          </button>
+        </div>
+      </section>
+
+      <section id="resultadoProntuario" class="hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+        <div class="border-b border-slate-100 pb-4 flex justify-between items-start">
+          <div>
+            <h3 id="pNome" class="text-base font-bold text-slate-900">---</h3>
+            <p id="pDetalhes" class="text-xs text-slate-500 mt-0.5">Matrícula: --- | Cargo: --- | Setor: ---</p>
+          </div>
+          <span class="bg-teal-50 text-teal-700 border border-teal-200 px-3 py-1 rounded-full text-xs font-bold">Ficha Ativa</span>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <i data-lucide="history" class="w-4 h-4 text-teal-600"></i> Linha do Tempo Unificada (Atestados & Exames)
+          </h4>
+          <div id="pLinhaTempo" class="space-y-3 border-l-2 border-teal-500 pl-4 ml-2">
+            <!-- Timeline inserida via JS -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- SEÇÃO: ALERTAS & GATILHOS MÉDICOS -->
+    <div id="sec-alertas" class="hidden space-y-6">
+      <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="bell-ring" class="text-rose-600 w-4 h-4"></i> Automações & Alertas Epidemiológicos
+        </h2>
+        <p class="text-xs text-slate-500">Monitoramento automático de Reincidência de CIDs, Afastamentos INSS (>15 dias) e Vencimentos.</p>
+
+        <div id="listaAlertas" class="space-y-3">
+          <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-500 text-center">
+            Nenhum alerta crítico disparado até o momento.
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- MODAL DE RESET DA BASE (DUPLA CONFIRMAÇÃO) -->
+  <div id="modalReset" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center gap-3 text-rose-600">
+        <div class="p-2 bg-rose-100 rounded-lg"><i data-lucide="alert-triangle"></i></div>
+        <h3 class="text-base font-bold text-slate-900">Reset Total da Base de Dados</h3>
+      </div>
+      
+      <p class="text-xs text-slate-600 leading-relaxed">
+        Esta ação excluirá permanentemente todos os registros de atestados e atendimentos da sessão. <strong>Esta ação não poderá ser desfeita.</strong>
+      </p>
+
+      <div class="space-y-2">
+        <label class="block text-xs font-bold text-slate-700">Senha Mestre do Administrador (ADM):</label>
+        <input type="password" id="inputSenhaAdm" placeholder="Digite 'admin123' para autorizar" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" />
+        <span id="erroSenhaReset" class="text-[11px] text-rose-600 hidden font-semibold">Senha incorreta ou perfil sem autorização!</span>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="fecharModalReset()" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+        <button onclick="executarResetBase()" class="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition">Confirmar Expurgo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LÓGICA JAVASCRIPT INTEGRADA -->
+  <script>
+    // ESTADO GLOBAL DA APLICAÇÃO (INICIALIZADO COM DADOS DEMONSTRATIVOS)
+    let dadosAtestados = [
+      { matricula: "1001", nome: "Carlos Eduardo Silva", cargo: "OPERADOR DE AÇOUGUE", setor: "Açougue", dias: 18, horas: 144, cid: "M54.5", emissor: "Dr. Roberto Alves", dataEmissao: "2026-08-05" },
+      { matricula: "1002", nome: "Ana Paula Souza", cargo: "CAIXA", setor: "Frente de Loja", dias: 3, horas: 24, cid: "J11", emissor: "Dra. Juliana Mendes", dataEmissao: "2026-08-10" },
+      { matricula: "1003", nome: "Marcos Vinicius", cargo: "CONFERENTE", setor: "Depósito", dias: 2, horas: 16, cid: "R51", emissor: "Dr. Roberto Alves", dataEmissao: "2026-08-12" },
+      { matricula: "1004", nome: "Fernanda Lima", cargo: "COZINHEIRO", setor: "Alimentação", dias: 5, horas: 40, cid: "K29", emissor: "Dr. Lucas Prado", dataEmissao: "2026-08-15" },
+      { matricula: "1001", nome: "Carlos Eduardo Silva", cargo: "OPERADOR DE AÇOUGUE", setor: "Açougue", dias: 4, horas: 32, cid: "M54.5", emissor: "Dr. Roberto Alves", dataEmissao: "2026-08-28" }
+    ];
+
+    let dadosAtendimentos = [
+      { matricula: "1001", nome: "Carlos Eduardo Silva", data: "2026-08-01", tipoExame: "Exame Periódico" },
+      { matricula: "1002", nome: "Ana Paula Souza", data: "2026-08-02", tipoExame: "Exame Retorno ao Trabalho" },
+      { matricula: "1003", nome: "Marcos Vinicius", data: "2026-08-05", tipoExame: "Exame Admissional" }
+    ];
+
+    let dadosFiltradosAtestados = [...dadosAtestados];
+    let roleAtual = "ADM";
+    let chartSetoresInstancia = null;
+    let chartCidInstancia = null;
+
+    // INICIALIZAÇÃO
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      inicializarGraficos();
+      populaFiltros();
+      recalcularDashboard();
+      verificarAlertas();
+    });
+
+    // NAVEGAÇÃO DE ABAS
+    function mudarAba(aba) {
+      document.getElementById("sec-dashboard").classList.add("hidden");
+      document.getElementById("sec-prontuario").classList.add("hidden");
+      document.getElementById("sec-alertas").classList.add("hidden");
+
+      document.getElementById("tab-dashboard").classList.remove("tab-active");
+      document.getElementById("tab-prontuario").classList.remove("tab-active");
+      document.getElementById("tab-alertas").classList.remove("tab-active");
+
+      document.getElementById(`sec-${aba}`).classList.remove("hidden");
+      document.getElementById(`tab-${aba}`).classList.add("tab-active");
+    }
+
+    // MOTOR DE DEPARA AUTOMÁTICO (MAPEAMENTO DE SETOR POR CARGO)
+    function MapearSetorPorCargo(cargo) {
+      if (!cargo) return "Administrativo";
+      const c = cargo.toString().toUpperCase().trim();
+
+      if (c.includes("CAIXA") || c.includes("EMPACOTADOR") || c.includes("RECEPCIONISTA") || c.includes("APRENDIZ") || c.includes("FRENTE DE LOJA")) return "Frente de Loja";
+      if (c.includes("COZINHA") || c.includes("PADARIA") || c.includes("ROTISSERIE") || c.includes("SALGADEIRO") || c.includes("PADEIRO") || c.includes("CONFEITEIRO") || c.includes("ALIMENTAÇÃO") || c.includes("FORNEIRO") || c.includes("COZINHEIRO") || c.includes("DEGUSTADORA")) return "Alimentação";
+      if (c.includes("AÇOUGUE") || c.includes("BALCONISTA DE AÇOUGUE") || c.includes("DESOSSADOR") || c.includes("PERECIVEIS") || c.includes("PERECÍVEIS") || c.includes("FRIOS")) return "Açougue";
+      if (c.includes("HORTIFRUTI")) return "Hortifruti";
+      if (c.includes("REPOSITOR") || c.includes("PROMOTOR") || c.includes("LOCUTOR") || c.includes("CARTAZISTA") || c.includes("GERENTE") || c.includes("SUBGERENTE") || c.includes("LIDER DE LOJA")) return "Reposição";
+      if (c.includes("DEPOSITO") || c.includes("DEPÓSITO") || c.includes("CONFERENTE") || c.includes("ALMOXARIFE") || c.includes("RECICLAGEM") || c.includes("TROCAS") || c.includes("ESTOQUE") || c.includes("EMPILHADEIRA")) return "Depósito";
+      if (c.includes("MOTORISTA") || c.includes("ENTREGA") || c.includes("AJUDANTE DE MOTORISTA")) return "Entrega";
+      if (c.includes("LIMPEZA") || c.includes("FAXINEIRO")) return "Zeladoria";
+      if (c.includes("MANUTENCAO") || c.includes("MANUTENÇÃO") || c.includes("ENGENHARIA")) return "Manutenção";
+      if (c.includes("VIGIA") || c.includes("TRAFEGO") || c.includes("VIGILÂNCIA")) return "Vigilância";
+      if (c.includes("SEGURANCA DO TRABALHO") || c.includes("ENFERMEIRO") || c.includes("SESMT")) return "SESMT";
+      if (c.includes("VENDAS") || c.includes("E-COMMERCE") || c.includes("PRODUCAO") || c.includes("B2B")) return "B2B";
+
+      return "Administrativo";
+    }
+
+    // PROCESSAMENTO DE EXCEL (.XLSX)
+    function processarArquivo(e, tipo) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        if (tipo === 'ATESTADO') {
+          dadosAtestados = json.map(row => {
+            const cargo = row["Cargo"] || row["Descrição (Cargo)"] || row["Função"] || "";
+            return {
+              matricula: String(row["Ficha Médica"] || row["Matrícula"] || "N/I"),
+              nome: row["Nome(Ficha Médica)"] || row["Nome"] || "Colaborador",
+              cargo: cargo,
+              setor: MapearSetorPorCargo(cargo),
+              dias: parseFloat(row["Tempo em Dias"] || row["Dias"] || 0),
+              horas: parseFloat(row["Tempo em Horas"] || row["Horas"] || 0),
+              cid: String(row["CID-10"] || row["CID"] || "Z00").toUpperCase(),
+              emissor: row["Nome(Atendente)"] || row["Médico"] || "Clínica Emissora",
+              dataEmissao: row["Emissão Atestado"] || "2026-08-01"
+            };
+          });
+          dadosFiltradosAtestados = [...dadosAtestados];
+          populaFiltros();
+        } else if (tipo === 'ATENDIMENTO') {
+          dadosAtendimentos = json.map(row => ({
+            matricula: String(row["Ficha Médica"] || row["Matrícula"] || "N/I"),
+            nome: row["Nome (Ficha Médica)"] || row["Nome"] || "Colaborador",
+            data: row["Atendimento"] || "2026-08-01",
+            tipoExame: row["Descrição (Ocorrência)"] || "Exame Ocupacional"
+          }));
+        }
+
+        atualizarStatusCarga(`Carga concluída: ${json.length} registros em ${tipo}.`);
+        recalcularDashboard();
+        verificarAlertas();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // POPULAR SELECTS DE FILTROS DINÂMICOS
+    function populaFiltros() {
+      const selectSetor = document.getElementById("filtroSetor");
+      const selectCID = document.getElementById("filtroCID");
+
+      const setores = [...new Set(dadosAtestados.map(d => d.setor))];
+      const cids = [...new Set(dadosAtestados.map(d => d.cid))];
+
+      selectSetor.innerHTML = '<option value="">Todos os Setores (Depara)</option>';
+      setores.forEach(s => selectSetor.innerHTML += `<option value="${s}">${s}</option>`);
+
+      selectCID.innerHTML = '<option value="">Todas as CIDs</option>';
+      cids.forEach(c => selectCID.innerHTML += `<option value="${c}">${c}</option>`);
+    }
+
+    function aplicarFiltrosGlobais() {
+      const fSetor = document.getElementById("filtroSetor").value;
+      const fCID = document.getElementById("filtroCID").value;
+
+      dadosFiltradosAtestados = dadosAtestados.filter(item => {
+        const matchSetor = !fSetor || item.setor === fSetor;
+        const matchCID = !fCID || item.cid === fCID;
+        return matchSetor && matchCID;
+      });
+
+      recalcularDashboard();
+    }
+
+    function limparFiltros() {
+      document.getElementById("filtroSetor").value = "";
+      document.getElementById("filtroCID").value = "";
+      dadosFiltradosAtestados = [...dadosAtestados];
+      recalcularDashboard();
+    }
+
+    // CÁLCULO E RENDERIZAÇÃO DO DASHBOARD
+    function recalcularDashboard() {
+      const totalAtestados = dadosFiltradosAtestados.length;
+      const totalDias = dadosFiltradosAtestados.reduce((acc, curr) => acc + curr.dias, 0);
+      const totalHoras = dadosFiltradosAtestados.reduce((acc, curr) => acc + curr.horas, 0);
+      const funcUnicos = new Set(dadosFiltradosAtestados.map(d => d.matricula)).size;
+      const indiceGravidade = totalAtestados > 0 ? (totalDias / totalAtestados).toFixed(1) : "0.0";
+      const totalExames = dadosAtendimentos.length;
+
+      document.getElementById("kpiTotalAtestados").innerText = totalAtestados;
+      document.getElementById("kpiTotalDias").innerText = totalDias;
+      document.getElementById("kpiTotalHoras").innerText = totalHoras + "h";
+      document.getElementById("kpiFuncAfastados").innerText = funcUnicos;
+      document.getElementById("kpiIndiceGravidade").innerText = indiceGravidade;
+      document.getElementById("kpiExamesOcupacionais").innerText = totalExames;
+
+      // Render Tabela
+      const tbody = document.getElementById("tabelaAtestadosBody");
+      document.getElementById("contadorRegistros").innerText = `${totalAtestados} registros`;
+      tbody.innerHTML = "";
+
+      if (totalAtestados === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum dado importado ou encontrado.</td></tr>`;
+      } else {
+        dadosFiltradosAtestados.forEach(row => {
+          const exibeCid = roleAtual === "GESTOR" ? "***" : row.cid;
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-3 font-mono font-bold text-slate-600">${row.matricula}</td>
+              <td class="p-3 font-medium">${row.nome}</td>
+              <td class="p-3 text-slate-500">${row.cargo || "N/A"}</td>
+              <td class="p-3"><span class="bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded text-[10px]">${row.setor}</span></td>
+              <td class="p-3 font-bold text-amber-600">${row.dias}d</td>
+              <td class="p-3 font-mono">${exibeCid}</td>
+              <td class="p-3 text-slate-500">${row.emissor}</td>
+            </tr>
+          `;
+        });
+      }
+
+      atualizarGraficos();
+    }
+
+    // CHART.JS INICIALIZAÇÃO E ATUALIZAÇÃO
+    function inicializarGraficos() {
+      const ctxSetores = document.getElementById("chartSetores").getContext("2d");
+      chartSetoresInstancia = new Chart(ctxSetores, {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "Atestados", data: [], backgroundColor: "#0d9488" }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      const ctxCid = document.getElementById("chartCid").getContext("2d");
+      chartCidInstancia = new Chart(ctxCid, {
+        type: "doughnut",
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ["#f43f5e", "#fb7185", "#fda4af", "#e2e8f0", "#94a3b8"] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function atualizarGraficos() {
+      // Setores
+      const setoresCount = {};
+      dadosFiltradosAtestados.forEach(d => { setoresCount[d.setor] = (setoresCount[d.setor] || 0) + 1; });
+      chartSetoresInstancia.data.labels = Object.keys(setoresCount);
+      chartSetoresInstancia.data.datasets[0].data = Object.values(setoresCount);
+      chartSetoresInstancia.update();
+
+      // CIDs
+      const cidCount = {};
+      dadosFiltradosAtestados.forEach(d => { cidCount[d.cid] = (cidCount[d.cid] || 0) + 1; });
+      chartCidInstancia.data.labels = Object.keys(cidCount);
+      chartCidInstancia.data.datasets[0].data = Object.values(cidCount);
+      chartCidInstancia.update();
+    }
+
+    // BUSCA DE PRONTUÁRIO INDIVIDUAL
+    function buscarProntuario() {
+      const termo = document.getElementById("buscaMatricula").value.toLowerCase().trim();
+      if (!termo) return;
+
+      const atestadosColab = dadosAtestados.filter(a => a.matricula.toLowerCase().includes(termo) || a.nome.toLowerCase().includes(termo));
+      const examesColab = dadosAtendimentos.filter(a => a.matricula.toLowerCase().includes(termo) || a.nome.toLowerCase().includes(termo));
+
+      if (atestadosColab.length === 0 && examesColab.length === 0) {
+        alert("Colaborador/Matrícula não localizado no banco de dados.");
+        return;
+      }
+
+      const pInfo = atestadosColab[0] || examesColab[0];
+      document.getElementById("pNome").innerText = pInfo.nome;
+      document.getElementById("pDetalhes").innerText = `Matrícula: ${pInfo.matricula} | Cargo: ${pInfo.cargo || "N/A"} | Setor: ${pInfo.setor || "N/A"}`;
+
+      const timeline = document.getElementById("pLinhaTempo");
+      timeline.innerHTML = "";
+
+      atestadosColab.forEach(a => {
+        const exibeCid = roleAtual === "GESTOR" ? "*** (Sigilo)" : a.cid;
+        timeline.innerHTML += `
+          <div class="relative pb-2">
+            <div class="text-xs font-bold text-rose-600 flex items-center gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> Atestado - ${a.dias} dias</div>
+            <div class="text-[11px] text-slate-600">CID: <strong>${exibeCid}</strong> | Emissor: ${a.emissor}</div>
+          </div>
+        `;
+      });
+
+      examesColab.forEach(e => {
+        timeline.innerHTML += `
+          <div class="relative pb-2">
+            <div class="text-xs font-bold text-teal-600 flex items-center gap-1"><i data-lucide="stethoscope" class="w-3.5 h-3.5"></i> ${e.tipoExame}</div>
+            <div class="text-[11px] text-slate-500">Data Atendimento: ${e.data}</div>
+          </div>
+        `;
+      });
+
+      document.getElementById("resultadoProntuario").classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    // VERIFICAÇÃO DE ALERTAS E GATILHOS INSS
+    function verificarAlertas() {
+      const lista = document.getElementById("listaAlertas");
+      lista.innerHTML = "";
+      let totalAlertas = 0;
+
+      dadosAtestados.filter(a => a.dias > 15).forEach(a => {
+        totalAlertas++;
+        lista.innerHTML += `
+          <div class="p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg text-xs flex justify-between items-center">
+            <div>
+              <span class="font-bold text-amber-800">Gatilho INSS / Afastamento Previdenciário (>15 Dias)</span>
+              <p class="text-slate-600 mt-0.5">Colaborador: <strong>${a.nome}</strong> (${a.matricula}) - ${a.dias} dias de afastamento.</p>
+            </div>
+            <span class="bg-amber-200 text-amber-900 font-bold px-2 py-1 rounded text-[10px]">Encaminhar ao INSS</span>
+          </div>
+        `;
+      });
+
+      const badge = document.getElementById("badgeAlertas");
+      if (totalAlertas > 0) {
+        badge.innerText = totalAlertas;
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
+
+    // EXPORTAÇÕES (EXCEL E PDF)
+    function exportarExcel() {
+      if (dadosFiltradosAtestados.length === 0) return alert("Não há dados para exportar.");
+
+      const relatorioMap = dadosFiltradosAtestados.map(d => ({
+        Matricula: d.matricula,
+        Nome: d.nome,
+        Cargo: d.cargo,
+        Setor: d.setor,
+        Dias: d.dias,
+        Horas: d.horas,
+        CID10: roleAtual === "GESTOR" ? "SIGILO" : d.cid,
+        MedicoEmissor: d.emissor
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(relatorioMap);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Atestados");
+      XLSX.writeFile(wb, "Relatorio_Medicina_Trabalho.xlsx");
+    }
+
+    function exportarPDF() {
+      if (dadosFiltradosAtestados.length === 0) return alert("Não há dados para exportar.");
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(14);
+      doc.text("Relatório Executivo de Medicina do Trabalho", 14, 15);
+      doc.setFontSize(9);
+      doc.text(`Perfil de Emissão: ${roleAtual} | Data: 2026-09-22`, 14, 22);
+
+      const tableRows = dadosFiltradosAtestados.map(d => [
+        d.matricula,
+        d.nome,
+        d.setor,
+        `${d.dias}d`,
+        roleAtual === "GESTOR" ? "***" : d.cid,
+        d.emissor
+      ]);
+
+      doc.autoTable({
+        head: [['Matrícula', 'Colaborador', 'Setor', 'Dias', 'CID-10', 'Emissor']],
+        body: tableRows,
+        startY: 28,
+        theme: 'stripe',
+        headStyles: { fillColor: [13, 148, 136] }
+      });
+
+      doc.save("Relatorio_Executivo_Medicina.pdf");
+    }
+
+    // CONTROLE DE PERFIL RBAC
+    function alterarPerfil() {
+      roleAtual = document.getElementById("userRole").value;
+      const lockMsg = document.getElementById("lockCidMessage");
+      const tagSigilo = document.getElementById("tagSigiloCid");
+
+      if (roleAtual === "GESTOR") {
+        lockMsg.classList.remove("hidden");
+        tagSigilo.innerText = "Sigilo Ativo (Sem CID)";
+        tagSigilo.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800";
+      } else {
+        lockMsg.classList.add("hidden");
+        tagSigilo.innerText = "Acesso Médico / Clínico";
+        tagSigilo.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800";
+      }
+
+      recalcularDashboard();
+    }
+
+    // PROTOCOLO DE RESET DE SEGURANÇA
+    function abrirModalReset() {
+      document.getElementById("modalReset").classList.remove("hidden");
+      document.getElementById("inputSenhaAdm").value = "";
+      document.getElementById("erroSenhaReset").classList.add("hidden");
+    }
+
+    function fecharModalReset() {
+      document.getElementById("modalReset").classList.add("hidden");
+    }
+
+    function executarResetBase() {
+      const senha = document.getElementById("inputSenhaAdm").value;
+      if (roleAtual === "ADM" && senha === "admin123") {
+        dadosAtestados = [];
+        dadosAtendimentos = [];
+        dadosFiltradosAtestados = [];
+        atualizarStatusCarga("Base de dados limpa com sucesso.");
+        recalcularDashboard();
+        verificarAlertas();
+        fecharModalReset();
+      } else {
+        document.getElementById("erroSenhaReset").classList.remove("hidden");
+      }
+    }
+
+    function atualizarStatusCarga(msg) {
+      document.getElementById("statusCarga").innerText = msg;
+    }
+  </script>
+</body>
+</html>
