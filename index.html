@@ -80,7 +80,7 @@
             <h2 class="text-sm font-bold text-slate-100 flex items-center gap-2">
               <i data-lucide="file-up" class="text-emerald-400 w-4 h-4"></i> Carga de Planilhas para o Supabase
             </h2>
-            <p class="text-xs text-slate-400">Suba os arquivos para gravá-los permanentemente na nuvem.</p>
+            <p class="text-xs text-slate-400">Suba primeiro EMPREGADOS.xlsx, depois ATESTADO.xlsx e ATENDIMENTO.xlsx</p>
           </div>
           <div id="statusCarga" class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
             Conectado ao Supabase. Carregando dados...
@@ -91,28 +91,28 @@
           <label class="border-2 border-dashed border-slate-600 hover:border-emerald-500 rounded-lg p-3 flex items-center gap-3 cursor-pointer transition bg-[#0f172a]/60 hover:bg-[#0f172a]">
             <div class="p-2 bg-indigo-950 text-indigo-400 rounded-lg border border-indigo-800"><i data-lucide="users" class="w-4 h-4"></i></div>
             <div class="flex-1">
-              <span class="block text-xs font-bold text-slate-200">EMPREGADOS.xlsx</span>
+              <span class="block text-xs font-bold text-slate-200">1º - EMPREGADOS.xlsx</span>
               <span class="block text-[10px] text-slate-400">Salvar na Nuvem</span>
             </div>
             <input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="processarEEnviarArquivo(event, 'EMPREGADOS')" />
           </label>
 
           <label class="border-2 border-dashed border-slate-600 hover:border-emerald-500 rounded-lg p-3 flex items-center gap-3 cursor-pointer transition bg-[#0f172a]/60 hover:bg-[#0f172a]">
-            <div class="p-2 bg-emerald-950 text-emerald-400 rounded-lg border border-emerald-800"><i data-lucide="stethoscope" class="w-4 h-4"></i></div>
-            <div class="flex-1">
-              <span class="block text-xs font-bold text-slate-200">ATENDIMENTO.xlsx</span>
-              <span class="block text-[10px] text-slate-400">Salvar na Nuvem</span>
-            </div>
-            <input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="processarEEnviarArquivo(event, 'ATENDIMENTO')" />
-          </label>
-
-          <label class="border-2 border-dashed border-slate-600 hover:border-emerald-500 rounded-lg p-3 flex items-center gap-3 cursor-pointer transition bg-[#0f172a]/60 hover:bg-[#0f172a]">
             <div class="p-2 bg-rose-950 text-rose-400 rounded-lg border border-rose-800"><i data-lucide="file-text" class="w-4 h-4"></i></div>
             <div class="flex-1">
-              <span class="block text-xs font-bold text-slate-200">ATESTADO.xlsx</span>
+              <span class="block text-xs font-bold text-slate-200">2º - ATESTADO.xlsx</span>
               <span class="block text-[10px] text-slate-400">Salvar na Nuvem</span>
             </div>
             <input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="processarEEnviarArquivo(event, 'ATESTADO')" />
+          </label>
+
+          <label class="border-2 border-dashed border-slate-600 hover:border-emerald-500 rounded-lg p-3 flex items-center gap-3 cursor-pointer transition bg-[#0f172a]/60 hover:bg-[#0f172a]">
+            <div class="p-2 bg-emerald-950 text-emerald-400 rounded-lg border border-emerald-800"><i data-lucide="stethoscope" class="w-4 h-4"></i></div>
+            <div class="flex-1">
+              <span class="block text-xs font-bold text-slate-200">3º - ATENDIMENTO.xlsx</span>
+              <span class="block text-[10px] text-slate-400">Salvar na Nuvem</span>
+            </div>
+            <input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="processarEEnviarArquivo(event, 'ATENDIMENTO')" />
           </label>
         </div>
       </section>
@@ -377,7 +377,7 @@
     let paginaAtual = 1;
     const itensPorPagina = 50;
 
-    Chart.register(ChartDataalers || ChartDataLabels);
+    Chart.register(ChartDataLabels);
 
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
@@ -398,7 +398,10 @@
           start += step; end += step;
         }
         allEmp.forEach(e => { 
-          mapaEmpregados[String(e.matricula).trim()] = { cargo: e.cargo, filial: String(e.filial || "1") }; 
+          mapaEmpregados[String(e.matricula).trim()] = { 
+            cargo: e.cargo, 
+            filial: String(e.filial || "1") 
+          }; 
         });
 
         let allAtest = [];
@@ -413,17 +416,19 @@
 
         dadosAtestados = allAtest.map((d, index) => {
           const mat = String(d.matricula || "").trim();
-          let filialOrigem = String(d.filial || d.loja_chave || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1")).trim();
-          let lojaChave = mapearChaveLoja(filialOrigem);
-          let cargoFinal = d.cargo || (mapaEmpregados[mat] ? mapaEmpregados[mat].cargo : "");
+          const empInfo = mapaEmpregados[mat] || { cargo: "", filial: "1" };
+          
+          let filialBruta = String(d.filial || empInfo.filial || "1").trim();
+          let lojaChave = mapearChaveLoja(filialBruta);
+          let cargoFinal = d.cargo || empInfo.cargo || "";
 
           return {
             matricula: mat,
             nome: d.nome || "Colaborador",
             cargo: cargoFinal,
-            filial: filialOrigem,
+            filial: filialBruta,
             lojaChave: lojaChave,
-            setor: d.setor && d.setor !== "" ? d.setor : MapearSetorPorCargo(cargoFinal),
+            setor: MapearSetorPorCargo(cargoFinal),
             dias: Number(d.dias) || 0,
             horas: Number(d.horas) || 0,
             cid: d.cid ? String(d.cid).trim().toUpperCase() : "SEM CID",
@@ -447,13 +452,14 @@
         }
         dadosAtendimentos = allAtend.map((d, index) => {
           const mat = String(d.matricula || "").trim();
-          let filialOrigem = String(d.filial || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1")).trim();
+          const empInfo = mapaEmpregados[mat] || { filial: "1" };
+          let filialBruta = String(d.filial || empInfo.filial || "1").trim();
           return {
             matricula: mat,
             nome: d.nome || "Colaborador",
-            cargo: d.cargo || "",
-            filial: filialOrigem,
-            lojaChave: mapearChaveLoja(filialOrigem),
+            cargo: d.cargo || empInfo.cargo || "",
+            filial: filialBruta,
+            lojaChave: mapearChaveLoja(filialBruta),
             data: d.data || "N/A",
             ano: String(d.ano || '2026'),
             mes: String(d.mes || String((index % 12) + 1)),
@@ -489,23 +495,27 @@
           if (tipo === 'EMPREGADOS') {
             const rows = json.map(row => ({
               matricula: String(row["Cadastro"] || row["Matrícula"] || row["Ficha Médica"] || "").trim(),
-              cargo: row["Título Reduzido (Cargo)"] || row["Cargo"] || "",
-              filial: String(row["Filial"] || row["Apelido (Filial)"] || "1").trim()
+              cargo: String(row["Título Reduzido (Cargo)"] || row["Cargo"] || "").trim(),
+              filial: String(row["Filial: Apelido (Filial)"] || row["Filial"] || row["Apelido (Filial)"] || "1").trim()
             })).filter(r => r.matricula);
-            await supabaseClient.from('empregados').upsert(rows);
+            
+            // Gravar em lotes para evitar estouro
+            for (let i = 0; i < rows.length; i += 500) {
+              await supabaseClient.from('empregados').upsert(rows.slice(i, i + 500));
+            }
           } else if (tipo === 'ATESTADO') {
             const rows = json.map(row => {
               const ficha = String(row["Ficha Médica"] || row["Matrícula"] || "").trim();
               const dtEmissaoRaw = row["Emissão Atestado"] || row["Data Emissão"] || "";
               const tempoAnoMes = extrairAnoEMes(dtEmissaoRaw);
-              const filialVal = String(row["Filial"] || row["Apelido (Filial)"] || "1").trim();
-              const cargoVal = row["Cargo"] || "";
+              const cargoVal = String(row["Cargo"] || "").trim();
+              
               return {
                 matricula: ficha,
-                nome: row["Nome(Ficha Médica)"] || row["Nome"] || "Colaborador",
+                nome: String(row["Nome(Ficha Médica)"] || row["Nome"] || "Colaborador").trim(),
                 cargo: cargoVal,
-                filial: filialVal,
-                loja_chave: mapearChaveLoja(filialVal),
+                filial: "", // Será preenchido pelo cruzamento com empregados
+                loja_chave: "Loja 1",
                 setor: MapearSetorPorCargo(cargoVal),
                 dias: parseNumero(row["Tempo em Dias"] || row["Dias"] || 0),
                 horas: parseHorasPuras(row["Tempo em Horas"] || 0),
@@ -518,18 +528,20 @@
                 mes: tempoAnoMes.mes
               };
             }).filter(r => r.matricula);
-            await supabaseClient.from('atestados').insert(rows);
+
+            for (let i = 0; i < rows.length; i += 500) {
+              await supabaseClient.from('atestados').insert(rows.slice(i, i + 500));
+            }
           } else if (tipo === 'ATENDIMENTO') {
             const rows = json.map(row => {
               const dtAtendRaw = row["Atendimento"] || row["Data Atendimento"] || "";
               const tempoAnoMes = extrairAnoEMes(dtAtendRaw);
-              const filialVal = String(row["Filial"] || "1").trim();
               return {
                 matricula: String(row["Ficha Médica"] || row["Matrícula"] || "").trim(),
-                nome: row["Nome (Ficha Médica)"] || row["Nome"] || "Colaborador",
-                cargo: row["Cargo"] || "",
-                filial: filialVal,
-                loja_chave: mapearChaveLoja(filialVal),
+                nome: String(row["Nome (Ficha Médica)"] || row["Nome"] || "Colaborador").trim(),
+                cargo: String(row["Cargo"] || "").trim(),
+                filial: "",
+                loja_chave: "Loja 1",
                 data: formatarData(dtAtendRaw),
                 ano: tempoAnoMes.ano,
                 mes: tempoAnoMes.mes,
@@ -537,7 +549,10 @@
                 posto: row["Descrição (Posto)"] || "Ambulatório"
               };
             }).filter(r => r.matricula);
-            await supabaseClient.from('atendimentos').insert(rows);
+
+            for (let i = 0; i < rows.length; i += 500) {
+              await supabaseClient.from('atendimentos').insert(rows.slice(i, i + 500));
+            }
           }
 
           alert(`${tipo} enviado e salvo no Supabase com sucesso!`);
@@ -607,18 +622,18 @@
 
     function mapearChaveLoja(filialRaw) {
       const str = String(filialRaw || "").trim().toUpperCase();
-      if (str === "8" || str.includes("LOJA 2") || str.includes("MATRIZ 2")) return "Loja 2";
-      if (str === "9" || str.includes("LOJA 3") || str.includes("MATRIZ 3")) return "Loja 3";
-      if (str === "10" || str === "4" || str.includes("LOJA 4") || str.includes("MATRIZ 4")) return "Loja 4";
-      return "Loja 1"; // Se for 1 ou qualquer outra não especificada
+      if (str.includes(" 8 ") || str.startsWith("8 ") || str === "8" || str.includes("LOJA 2") || str.includes("MATRIZ 2")) return "Loja 2";
+      if (str.includes(" 9 ") || str.startsWith("9 ") || str === "9" || str.includes("LOJA 3") || str.includes("MATRIZ 3")) return "Loja 3";
+      if (str.includes(" 10") || str.startsWith("10") || str === "10" || str === "4" || str.includes("LOJA 4") || str.includes("MATRIZ 4")) return "Loja 4";
+      return "Loja 1"; // Padrão para 1 ou outras
     }
 
     function MapearSetorPorCargo(cargo) {
       const cNorm = String(cargo || "").toUpperCase();
       if (!cNorm || cNorm === "N/A" || cNorm === "UNDEFINED") return "Outros Setores";
-      if (cNorm.includes("CAIXA") || cNorm.includes("FRENTE") || cNorm.includes("OPERADOR") || cNorm.includes("ATENDENTE") || cNorm.includes("EMPACOTADOR")) return "Frente de Loja";
-      if (cNorm.includes("ACO") || cNorm.includes("PERECIVEL") || cNorm.includes("CARNE") || cNorm.includes("PADARIA") || cNorm.includes("AÇOUGUE") || cNorm.includes("BALCONISTA") || cNorm.includes("AÇOUGUEIRO")) return "Açougue / Perecíveis";
-      if (cNorm.includes("REPOSITOR") || cNorm.includes("ESTOQUE") || cNorm.includes("CONFERENTE") || cNorm.includes("RECEBEDOR") || cNorm.includes("LOGISTICA")) return "Reposição / Estoque";
+      if (cNorm.includes("CAIXA") || cNorm.includes("FRENTE") || cNorm.includes("OPERADOR") || cNorm.includes("ATENDENTE") || cNorm.includes("EMPACOTADOR") || cNorm.includes("FORMEIRO")) return "Frente de Loja";
+      if (cNorm.includes("ACO") || cNorm.includes("PERECIVEL") || cNorm.includes("CARNE") || cNorm.includes("PADARIA") || cNorm.includes("AÇOUGUE") || cNorm.includes("BALCONISTA") || cNorm.includes("AÇOUGUEIRO") || cNorm.includes("HORTIFRUTI")) return "Açougue / Perecíveis";
+      if (cNorm.includes("REPOSITOR") || cNorm.includes("ESTOQUE") || cNorm.includes("CONFERENTE") || cNorm.includes("RECEBEDOR") || cNorm.includes("LOGISTICA") || cNorm.includes("DEPOSITO")) return "Reposição / Estoque";
       if (cNorm.includes("GERENTE") || cNorm.includes("ADMINISTRATIVO") || cNorm.includes("ASSISTENTE") || cNorm.includes("SUPERVISOR") || cNorm.includes("ADMINISTRATIVA") || cNorm.includes("FINANCEIRO")) return "Administrativo";
       return "Outros Setores";
     }
