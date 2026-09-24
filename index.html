@@ -53,7 +53,7 @@
           </select>
         </div>
 
-        <button onclick="abrirModalReset()" class="bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/60 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition shadow-sm cursor-pointer">
+        <button onclick="limparBancoNuvem()" class="bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/60 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition shadow-sm cursor-pointer">
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpar Banco
         </button>
       </div>
@@ -323,36 +323,55 @@
       </section>
     </div>
 
-    <!-- OUTRAS ABAS -->
+    <!-- SEÇÃO: COMPARATIVO MÊS A MÊS -->
     <div id="sec-comparativo" class="hidden space-y-6">
-      <section class="tab-bg-container space-y-4">
-        <h2 class="text-sm font-bold text-slate-100">Análise Comparativa Mês a Mês</h2>
+      <section class="tab-bg-container space-y-6">
+        <h2 class="text-sm font-bold text-slate-100 uppercase flex items-center gap-2"><i data-lucide="trending-up" class="text-emerald-400 w-4 h-4"></i> Análise Comparativa Mês a Mês</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="p-6 bg-[#0f172a] rounded-xl border border-slate-700 text-center"><span class="text-xs text-slate-400 uppercase">Variação Atestados</span><div id="deltaAtestados" class="text-base font-bold mt-2">--</div></div>
-          <div class="p-6 bg-[#0f172a] rounded-xl border border-slate-700 text-center"><span class="text-xs text-slate-400 uppercase">Variação Dias</span><div id="deltaDias" class="text-base font-bold mt-2">--</div></div>
-          <div class="p-6 bg-[#0f172a] rounded-xl border border-slate-700 text-center"><span class="text-xs text-slate-400 uppercase">CIDs Distintas</span><div id="deltaCids" class="text-base font-bold mt-2">--</div></div>
+          <div class="p-5 bg-[#0f172a] rounded-xl border border-slate-700 text-center">
+            <span class="text-xs text-slate-400 uppercase font-bold">Variação Atestados</span>
+            <div id="deltaAtestados" class="text-2xl font-black mt-2 text-emerald-400">0%</div>
+          </div>
+          <div class="p-5 bg-[#0f172a] rounded-xl border border-slate-700 text-center">
+            <span class="text-xs text-slate-400 uppercase font-bold">Variação Dias</span>
+            <div id="deltaDias" class="text-2xl font-black mt-2 text-amber-400">0%</div>
+          </div>
+          <div class="p-5 bg-[#0f172a] rounded-xl border border-slate-700 text-center">
+            <span class="text-xs text-slate-400 uppercase font-bold">CIDs Distintas</span>
+            <div id="deltaCids" class="text-2xl font-black mt-2 text-indigo-400">0</div>
+          </div>
+        </div>
+        <div class="relative w-full min-h-[320px] bg-[#0f172a] p-4 rounded-xl border border-slate-700">
+          <canvas id="chartComparativoMes"></canvas>
         </div>
       </section>
     </div>
 
+    <!-- SEÇÃO: PRONTUÁRIO -->
     <div id="sec-prontuario" class="hidden space-y-6">
       <section class="tab-bg-container space-y-4">
-        <h2 class="text-sm font-bold text-slate-100">Localizar Prontuário</h2>
+        <h2 class="text-sm font-bold text-slate-100 uppercase flex items-center gap-2"><i data-lucide="user-check" class="text-emerald-400 w-4 h-4"></i> Localizar Prontuário por Ficha / Matrícula</h2>
         <div class="flex gap-3">
-          <input type="text" id="buscaMatricula" placeholder="Digite a Ficha ou Nome..." class="flex-1 text-xs p-2.5 bg-[#0f172a] border border-slate-600 rounded-lg text-slate-200 outline-none" />
-          <button onclick="buscarProntuario()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer">Buscar</button>
+          <input type="text" id="buscaMatricula" placeholder="Digite a Ficha ou Nome do colaborador..." class="flex-1 text-xs p-3 bg-[#0f172a] border border-slate-600 rounded-lg text-slate-200 outline-none" />
+          <button onclick="buscarProntuario()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-lg text-xs font-bold cursor-pointer transition">Buscar</button>
         </div>
       </section>
       <section id="resultadoProntuario" class="hidden tab-bg-container space-y-6">
-        <h3 id="pNome" class="text-lg font-bold">---</h3>
-        <p id="pDetalhes" class="text-sm text-slate-400">---</p>
-        <div id="pLinhaTempo" class="space-y-4 border-l-2 border-emerald-500 pl-4 ml-2"></div>
+        <div>
+          <h3 id="pNome" class="text-base font-bold text-emerald-400">---</h3>
+          <p id="pDetalhes" class="text-xs text-slate-400 mt-1">---</p>
+        </div>
+        <div class="border-t border-slate-700 pt-4">
+          <h4 class="text-xs font-bold uppercase text-slate-300 mb-3">Histórico de Afastamentos</h4>
+          <div id="pLinhaTempo" class="space-y-3 max-h-[350px] overflow-y-auto pr-2"></div>
+        </div>
       </section>
     </div>
 
+    <!-- SEÇÃO: ALERTAS -->
     <div id="sec-alertas" class="hidden space-y-6">
       <section class="tab-bg-container space-y-4">
-        <h2 class="text-sm font-bold text-slate-100">Painel de Alertas & Vigilância</h2>
+        <h2 class="text-sm font-bold text-slate-100 uppercase flex items-center gap-2"><i data-lucide="bell" class="text-rose-400 w-4 h-4"></i> Painel de Alertas & Vigilância</h2>
         <div id="listaAlertas" class="space-y-3"></div>
       </section>
     </div>
@@ -382,11 +401,9 @@
       carregarDadosDoSupabasePaginado();
     });
 
-    // Função para puxar TODOS os registros em blocos de 1000 (contornando o limite do Supabase)
     async function carregarDadosDoSupabasePaginado() {
-      atualizarStatusCarga("Sincronizando com o Supabase (puxando todos os registros)...");
+      atualizarStatusCarga("Sincronizando com o Supabase...");
       try {
-        // Carregar Empregados
         let allEmp = [];
         let step = 1000, start = 0, end = 999;
         while (true) {
@@ -398,7 +415,6 @@
         }
         allEmp.forEach(e => { mapaEmpregados[e.matricula] = { cargo: e.cargo, filial: e.filial }; });
 
-        // Carregar Atestados por Lotes de 1000
         let allAtest = [];
         start = 0; end = 999;
         while (true) {
@@ -414,7 +430,6 @@
           dataEmissao: d.data_emissao, dataTermino: d.data_termino, ano: d.ano, mes: d.mes
         }));
 
-        // Carregar Atendimentos por Lotes de 1000
         let allAtend = [];
         start = 0; end = 999;
         while (true) {
@@ -459,7 +474,6 @@
               cargo: row["Título Reduzido (Cargo)"] || row["Cargo"] || "",
               filial: String(row["Filial"] || row["Apelido (Filial)"] || "1")
             })).filter(r => r.matricula);
-            
             await supabaseClient.from('empregados').upsert(rows);
           } else if (tipo === 'ATESTADO') {
             const rows = json.map(row => {
@@ -485,7 +499,6 @@
                 mes: tempoAnoMes.mes
               };
             }).filter(r => r.matricula);
-
             await supabaseClient.from('atestados').insert(rows);
           } else if (tipo === 'ATENDIMENTO') {
             const rows = json.map(row => {
@@ -504,7 +517,6 @@
                 posto: row["Descrição (Posto)"] || "Ambulatório"
               };
             }).filter(r => r.matricula);
-
             await supabaseClient.from('atendimentos').insert(rows);
           }
 
@@ -516,6 +528,20 @@
         }
       };
       reader.readAsArrayBuffer(file);
+    }
+
+    async function limparBancoNuvem() {
+      if (!confirm("Tem certeza que deseja apagar todos os dados do banco na nuvem?")) return;
+      try {
+        await supabaseClient.from('atestados').delete().neq('id', 0);
+        await supabaseClient.from('atendimentos').delete().neq('id', 0);
+        await supabaseClient.from('empregados').delete().neq('id', 0);
+        alert("Banco limpo com sucesso!");
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao limpar o banco.");
+      }
     }
 
     function mudarAba(aba) {
@@ -582,6 +608,13 @@
       document.getElementById("filtroFilial").innerHTML = '<option value="">Todas as Lojas</option>' + filiais.map(f => `<option value="${f}">${f}</option>`).join('');
       document.getElementById("filtroSetor").innerHTML = '<option value="">Todos os Setores</option>' + setores.map(s => `<option value="${s}">${s}</option>`).join('');
       document.getElementById("filtroCID").innerHTML = '<option value="">Todas as CIDs</option>' + cids.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      const topAno = document.getElementById("top30FiltroAno");
+      if (topAno) topAno.innerHTML = '<option value="">Todos Anos</option>' + anos.map(a => `<option value="${a}">${a}</option>`).join('');
+      const topFilial = document.getElementById("top30FiltroFilial");
+      if (topFilial) topFilial.innerHTML = '<option value="">Todas Lojas</option>' + filiais.map(f => `<option value="${f}">${f}</option>`).join('');
+      const topSetor = document.getElementById("top30FiltroSetor");
+      if (topSetor) topSetor.innerHTML = '<option value="">Todos Setores</option>' + setores.map(s => `<option value="${s}">${s}</option>`).join('');
     }
 
     function aplicarFiltrosGlobais() {
@@ -617,10 +650,33 @@
       document.getElementById("kpiIndiceGravidade").innerText = totalAtestados > 0 ? (totalDias / totalAtestados).toFixed(1) : "0.0";
       document.getElementById("kpiExamesOcupacionais").innerText = dadosFiltradosAtendimentos.length;
 
+      // Saúde Mental
+      const smItems = dadosFiltradosAtestados.filter(d => {
+        const c = d.cid.toUpperCase();
+        return c >= 'F00' && c <= 'F99';
+      });
+      const smDias = smItems.reduce((acc, curr) => acc + curr.dias, 0);
+      document.getElementById("kpiSaudeMental").innerText = smItems.length;
+      document.getElementById("kpiSMDias").innerText = smDias;
+      document.getElementById("kpiSMIndice").innerText = smItems.length > 0 ? (smDias / smItems.length).toFixed(1) : "0.0";
+      document.getElementById("kpiSMPercent").innerText = totalAtestados > 0 ? ((smItems.length / totalAtestados) * 100).toFixed(1) + "%" : "0.0%";
+
+      // LER / DORT
+      const ldItems = dadosFiltradosAtestados.filter(d => {
+        const c = d.cid.toUpperCase();
+        return c >= 'M00' && c <= 'M99';
+      });
+      const ldDias = ldItems.reduce((acc, curr) => acc + curr.dias, 0);
+      document.getElementById("kpiLerDort").innerText = ldItems.length;
+      document.getElementById("kpiLDDias").innerText = ldDias;
+      document.getElementById("kpiLDIndice").innerText = ldItems.length > 0 ? (ldDias / ldItems.length).toFixed(1) : "0.0";
+      document.getElementById("kpiLDPercent").innerText = totalAtestados > 0 ? ((ldItems.length / totalAtestados) * 100).toFixed(1) + "%" : "0.0%";
+
       agruparColaboradores();
       renderizarTabela();
       renderizarTop30();
       atualizarGraficos();
+      atualizarComparativoMes();
     }
 
     function agruparColaboradores() {
@@ -638,7 +694,7 @@
         tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
         return;
       }
-      tbody.innerHTML = dadosColaboradoresAgrupados.slice(0, 50).map(row => `
+      tbody.innerHTML = dadosColaboradoresAgrupados.slice((paginaAtual-1)*itensPorPagina, paginaAtual*itensPorPagina).map(row => `
         <tr class="hover:bg-[#1e293b]/70">
           <td class="p-2.5 font-mono text-emerald-400">${row.matricula}</td>
           <td class="p-2.5 font-bold">${row.nome}</td>
@@ -647,22 +703,56 @@
           <td class="p-2.5 text-center font-bold text-emerald-400">${row.qtdeAtestados}</td>
         </tr>
       `).join('');
+      document.getElementById("infoPaginacao").innerText = `Pág. ${paginaAtual}`;
+    }
+
+    function mudarPagina(direcao) {
+      const maxPag = Math.ceil(dadosColaboradoresAgrupados.length / itensPorPagina);
+      paginaAtual += direcao;
+      if (paginaAtual < 1) paginaAtual = 1;
+      if (paginaAtual > maxPag) paginaAtual = maxPag || 1;
+      renderizarTabela();
+    }
+
+    function filtrarTabelaTexto() {
+      const termo = document.getElementById("buscaTabela").value.toLowerCase();
+      if (!termo) {
+        dadosColaboradoresAgrupados = [];
+        agruparColaboradores();
+        renderizarTabela();
+        return;
+      }
+      dadosColaboradoresAgrupados = dadosColaboradoresAgrupados.filter(i => i.nome.toLowerCase().includes(termo) || i.matricula.toLowerCase().includes(termo));
+      paginaAtual = 1;
+      renderizarTabela();
     }
 
     function renderizarTop30() {
       const tbody = document.getElementById("tabelaTop30Body");
-      const top30 = dadosColaboradoresAgrupados.slice(0, 30);
-      if (top30.length === 0) {
+      const fAno = document.getElementById("top30FiltroAno")?.value || "";
+      const fFilial = document.getElementById("top30FiltroFilial")?.value || "";
+      const fSetor = document.getElementById("top30FiltroSetor")?.value || "";
+
+      let filtrados = dadosAtestados.filter(i => (!fAno || i.ano === fAno) && (!fFilial || i.lojaChave === fFilial) && (!fSetor || i.setor === fSetor));
+      const mapa = {};
+      filtrados.forEach(i => {
+        if (!mapa[i.matricula]) mapa[i.matricula] = { matricula: i.matricula, nome: i.nome, setor: i.setor, qtde: 0, dias: 0 };
+        mapa[i.matricula].qtde++;
+        mapa[i.matricula].dias += i.dias;
+      });
+      const topArr = Object.values(mapa).sort((a,b) => b.qtde - a.qtde).slice(0, 30);
+
+      if (topArr.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">Sem dados.</td></tr>`;
         return;
       }
-      tbody.innerHTML = top30.map((item, idx) => `
+      tbody.innerHTML = topArr.map((item, idx) => `
         <tr class="hover:bg-[#1e293b]/70">
           <td class="p-2.5 text-amber-400 font-bold">#${idx + 1}</td>
           <td class="p-2.5 font-mono text-emerald-400">${item.matricula}</td>
           <td class="p-2.5 font-semibold">${item.nome}</td>
           <td class="p-2.5">${item.setor}</td>
-          <td class="p-2.5 text-center text-amber-400 font-bold">${item.qtdeAtestados} ates.</td>
+          <td class="p-2.5 text-center text-amber-400 font-bold">${item.qtde} ates. / ${item.dias}d</td>
         </tr>
       `).join('');
     }
@@ -675,6 +765,7 @@
       charts.setor = new Chart(document.getElementById("chartSetores"), { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: "#0284c7" }] }, options: { responsive: true, maintainAspectRatio: false } });
       charts.cid = new Chart(document.getElementById("chartCid"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#e11d48", "#f97316", "#10b981"] }] }, options: { responsive: true, maintainAspectRatio: false } });
       charts.postos = new Chart(document.getElementById("chartPostos"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#0ea5e9", "#14b8a6"] }] }, options: { responsive: true, maintainAspectRatio: false } });
+      charts.comparativo = new Chart(document.getElementById("chartComparativoMes"), { type: 'line', data: { labels: [], datasets: [{ label: 'Atestados', data: [], borderColor: '#34d399', backgroundColor: '#34d399', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false } });
     }
 
     function atualizarGraficos() {
@@ -688,6 +779,89 @@
       });
       charts.atestLoja.data.datasets[0].data = [l1, l2, l3, l4]; charts.atestLoja.update();
       charts.diasLoja.data.datasets[0].data = [d1, d2, d3, d4]; charts.diasLoja.update();
+
+      // Atendimentos Pizza
+      const atendCount = {};
+      dadosFiltradosAtendimentos.forEach(a => { atendCount[a.tipoExame] = (atendCount[a.tipoExame] || 0) + 1; });
+      charts.atend.data.labels = Object.keys(atendCount);
+      charts.atend.data.datasets[0].data = Object.values(atendCount);
+      charts.atend.update();
+
+      // Setores Bar
+      const setorCount = {};
+      dadosFiltradosAtestados.forEach(s => { setorCount[s.setor] = (setorCount[s.setor] || 0) + 1; });
+      charts.setor.data.labels = Object.keys(setorCount);
+      charts.setor.data.datasets[0].data = Object.values(setorCount);
+      charts.setor.update();
+
+      // CIDs Donut
+      const cidCount = {};
+      dadosFiltradosAtestados.forEach(c => { cidCount[c.cid] = (cidCount[c.cid] || 0) + 1; });
+      const sortedCids = Object.entries(cidCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
+      charts.cid.data.labels = sortedCids.map(i => i[0]);
+      charts.cid.data.datasets[0].data = sortedCids.map(i => i[1]);
+      charts.cid.update();
+
+      // Postos Donut
+      const postoCount = {};
+      dadosFiltradosAtestados.forEach(p => { postoCount[p.postoAtendimento] = (postoCount[p.postoAtendimento] || 0) + 1; });
+      charts.postos.data.labels = Object.keys(postoCount);
+      charts.postos.data.datasets[0].data = Object.values(postoCount);
+      charts.postos.update();
+    }
+
+    function atualizarComparativoMes() {
+      const mesesMap = { "1": "Jan", "2": "Fev", "3": "Mar", "4": "Abr", "5": "Mai", "6": "Jun", "7": "Jul", "8": "Ago", "9": "Set", "10": "Out", "11": "Nov", "12": "Dez" };
+      const porMes = {};
+      dadosFiltradosAtestados.forEach(d => {
+        if (!d.mes) return;
+        if (!porMes[d.mes]) porMes[d.mes] = { atestados: 0, dias: 0, cids: new Set() };
+        porMes[d.mes].atestados++;
+        porMes[d.mes].dias += d.dias;
+        porMes[d.mes].cids.add(d.cid);
+      });
+
+      const mesesOrdenados = Object.keys(porMes).sort((a,b) => Number(a) - Number(b));
+      const labels = mesesOrdenados.map(m => mesesMap[m] || m);
+      const dataAtestados = mesesOrdenados.map(m => porMes[m].atestados);
+
+      charts.comparativo.data.labels = labels;
+      charts.comparativo.data.datasets[0].data = dataAtestados;
+      charts.comparativo.update();
+
+      if (mesesOrdenados.length >= 2) {
+        const ultimo = porMes[mesesOrdenados[mesesOrdenados.length-1]].atestados;
+        const penultimo = porMes[mesesOrdenados[mesesOrdenados.length-2]].atestados;
+        const variacao = penultimo > 0 ? (((ultimo - penultimo) / penultimo) * 100).toFixed(1) : 0;
+        document.getElementById("deltaAtestados").innerText = (variacao >= 0 ? "+" : "") + variacao + "%";
+        document.getElementById("deltaCids").innerText = porMes[mesesOrdenados[mesesOrdenados.length-1]].cids.size;
+      }
+    }
+
+    function buscarProntuario() {
+      const termo = document.getElementById("buscaMatricula").value.trim().toLowerCase();
+      if (!termo) return;
+      const atests = dadosAtestados.filter(a => a.matricula.toLowerCase().includes(termo) || a.nome.toLowerCase().includes(termo));
+      const sec = document.getElementById("resultadoProntuario");
+      if (atests.length === 0) {
+        alert("Colaborador não encontrado.");
+        sec.classList.add("hidden");
+        return;
+      }
+      sec.classList.remove("hidden");
+      document.getElementById("pNome").innerText = atests[0].nome + " (Matrícula/Ficha: " + atests[0].matricula + ")";
+      document.getElementById("pDetalhes").innerText = "Cargo: " + (atests[0].cargo || "N/A") + " | Setor: " + atests[0].setor + " | Loja: " + atests[0].lojaChave;
+
+      const timeline = document.getElementById("pLinhaTempo");
+      timeline.innerHTML = atests.map(a => `
+        <div class="p-3 bg-[#0f172a] rounded-lg border border-slate-700 text-xs flex justify-between items-center">
+          <div>
+            <span class="text-emerald-400 font-bold">Emissão: ${a.dataEmissao}</span> — CID: <strong class="text-white">${a.cid}</strong>
+            <div class="text-slate-400 text-[11px] mt-0.5">Posto: ${a.postoAtendimento} | Atendente: ${a.atendente}</div>
+          </div>
+          <div class="bg-amber-950/60 text-amber-300 px-2.5 py-1 rounded font-bold border border-amber-800/60">${a.dias} dias (${a.horas}h)</div>
+        </div>
+      `).join('');
     }
 
     function verificarAlertas() {
@@ -697,7 +871,7 @@
       
       document.getElementById("listaAlertas").innerHTML = longos.length === 0 ? 
         `<div class="p-4 bg-[#0f172a] text-center text-xs text-slate-400">Nenhum alerta crítico.</div>` :
-        longos.map(a => `<div class="p-3 bg-amber-950/60 border-l-4 border-amber-500 text-xs">Afastamento Longo (>15d): <strong>${a.nome}</strong> (${a.dias} dias)</div>`).join('');
+        longos.map(a => `<div class="p-3 bg-amber-950/60 border-l-4 border-amber-500 text-xs">Afastamento Longo (>15d): <strong>${a.nome}</strong> (Ficha: ${a.matricula}) — <strong>${a.dias} dias</strong> (CID: ${a.cid})</div>`).join('');
     }
 
     function alterarPerfil() {
