@@ -411,23 +411,19 @@
           start += step; end += step;
         }
 
-        const lojasPossiveis = ["Loja 1", "Loja 2", "Loja 3", "Loja 4"];
         dadosAtestados = allAtest.map((d, index) => {
           const mat = String(d.matricula || "").trim();
-          let filialOrigem = d.filial || d.loja_chave || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "");
+          let filialOrigem = d.filial || d.loja_chave || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1");
           let lojaChave = mapearChaveLoja(filialOrigem);
-          
-          if (!filialOrigem || lojaChave === "Loja 1" && !String(d.filial).includes("2") && !String(d.filial).includes("3") && !String(d.filial).includes("4")) {
-            lojaChave = lojasPossiveis[index % lojasPossiveis.length];
-          }
+          let cargoFinal = d.cargo || (mapaEmpregados[mat] ? mapaEmpregados[mat].cargo : "");
 
           return {
             matricula: mat,
             nome: d.nome || "Colaborador",
-            cargo: d.cargo || (mapaEmpregados[mat] ? mapaEmpregados[mat].cargo : ""),
+            cargo: cargoFinal,
             filial: filialOrigem,
             lojaChave: lojaChave,
-            setor: d.setor || MapearSetorPorCargo(d.cargo || (mapaEmpregados[mat] ? mapaEmpregados[mat].cargo : "")),
+            setor: d.setor && d.setor !== "" ? d.setor : MapearSetorPorCargo(cargoFinal),
             dias: Number(d.dias) || 0,
             horas: Number(d.horas) || 0,
             cid: d.cid ? String(d.cid).trim().toUpperCase() : "SEM CID",
@@ -503,13 +499,14 @@
               const dtEmissaoRaw = row["Emissão Atestado"] || row["Data Emissão"] || "";
               const tempoAnoMes = extrairAnoEMes(dtEmissaoRaw);
               const filialVal = String(row["Filial"] || row["Apelido (Filial)"] || "1");
+              const cargoVal = row["Cargo"] || "";
               return {
                 matricula: ficha,
                 nome: row["Nome(Ficha Médica)"] || row["Nome"] || "Colaborador",
-                cargo: row["Cargo"] || "",
+                cargo: cargoVal,
                 filial: filialVal,
                 loja_chave: mapearChaveLoja(filialVal),
-                setor: MapearSetorPorCargo(row["Cargo"]),
+                setor: MapearSetorPorCargo(cargoVal),
                 dias: parseNumero(row["Tempo em Dias"] || row["Dias"] || 0),
                 horas: parseHorasPuras(row["Tempo em Horas"] || 0),
                 cid: row["CID-10"] ? String(row["CID-10"]).trim().toUpperCase() : "SEM CID",
@@ -610,21 +607,19 @@
 
     function mapearChaveLoja(filialRaw) {
       const str = String(filialRaw || "").trim().toUpperCase();
-      if (str.includes("10") || str.includes("LOJA 4") || str.includes("MATRIZ 4")) return "Loja 4";
-      if (str.includes("9") || str.includes("LOJA 3") || str.includes("MATRIZ 3")) return "Loja 3";
-      if (str.includes("8") || str.includes("LOJA 2") || str.includes("MATRIZ 2")) return "Loja 2";
-      if (str === "2") return "Loja 2";
-      if (str === "3") return "Loja 3";
-      if (str === "4" || str === "10") return "Loja 4";
+      if (str.includes("10") || str.includes("LOJA 4") || str.includes("MATRIZ 4") || str === "4" || str === "10") return "Loja 4";
+      if (str.includes("9") || str.includes("LOJA 3") || str.includes("MATRIZ 3") || str === "3" || str === "9") return "Loja 3";
+      if (str.includes("8") || str.includes("LOJA 2") || str.includes("MATRIZ 2") || str === "2" || str === "8") return "Loja 2";
       return "Loja 1";
     }
 
     function MapearSetorPorCargo(cargo) {
       const cNorm = String(cargo || "").toUpperCase();
-      if (cNorm.includes("CAIXA") || cNorm.includes("FRENTE") || cNorm.includes("OPERADOR") || cNorm.includes("ATENDENTE")) return "Frente de Loja";
-      if (cNorm.includes("ACO") || cNorm.includes("PERECIVEL") || cNorm.includes("CARNE") || cNorm.includes("PADARIA") || cNorm.includes("AÇOUGUE")) return "Açougue";
-      if (cNorm.includes("REPOSITOR") || cNorm.includes("ESTOQUE") || cNorm.includes("CONFERENTE")) return "Reposição";
-      if (cNorm.includes("GERENTE") || cNorm.includes("ADMINISTRATIVO") || cNorm.includes("ASSISTENTE") || cNorm.includes("SUPERVISOR")) return "Administrativo";
+      if (!cNorm || cNorm === "N/A" || cNorm === "UNDEFINED") return "Outros Setores";
+      if (cNorm.includes("CAIXA") || cNorm.includes("FRENTE") || cNorm.includes("OPERADOR") || cNorm.includes("ATENDENTE") || cNorm.includes("EMPACOTADOR")) return "Frente de Loja";
+      if (cNorm.includes("ACO") || cNorm.includes("PERECIVEL") || cNorm.includes("CARNE") || cNorm.includes("PADARIA") || cNorm.includes("AÇOUGUE") || cNorm.includes("BALCONISTA") || cNorm.includes("AÇOUGUEIRO")) return "Açougue / Perecíveis";
+      if (cNorm.includes("REPOSITOR") || cNorm.includes("ESTOQUE") || cNorm.includes("CONFERENTE") || cNorm.includes("RECEBEDOR") || cNorm.includes("LOGISTICA")) return "Reposição / Estoque";
+      if (cNorm.includes("GERENTE") || cNorm.includes("ADMINISTRATIVO") || cNorm.includes("ASSISTENTE") || cNorm.includes("SUPERVISOR") || cNorm.includes("ADMINISTRATIVA") || cNorm.includes("FINANCEIRO")) return "Administrativo";
       return "Outros Setores";
     }
 
@@ -790,7 +785,6 @@
 
     let charts = {};
     function inicializarGraficos() {
-      // CORREÇÃO: Adicionado o rótulo 'label' explícito para evitar o erro 'undefined' no Chart.js
       charts.atestLoja = new Chart(document.getElementById("chartAtestadosPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ label: 'Atestados', data: [0,0,0,0], backgroundColor: "#059669" }] }, options: { responsive: true, maintainAspectRatio: false } });
       charts.diasLoja = new Chart(document.getElementById("chartDiasPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ label: 'Dias Afastados', data: [0,0,0,0], backgroundColor: "#d97706" }] }, options: { responsive: true, maintainAspectRatio: false } });
       charts.atend = new Chart(document.getElementById("chartAtendimentosPizza"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899"] }] }, options: { responsive: true, maintainAspectRatio: false } });
