@@ -323,7 +323,7 @@
       </section>
     </div>
 
-    <!-- OUTRAS ABAS (MANTIDAS) -->
+    <!-- OUTRAS ABAS -->
     <div id="sec-comparativo" class="hidden space-y-6">
       <section class="tab-bg-container space-y-4">
         <h2 class="text-sm font-bold text-slate-100">Análise Comparativa Mês a Mês</h2>
@@ -360,7 +360,6 @@
   </main>
 
   <script>
-    // URL E CHAVE DO SUPABASE CORRIGIDAS
     const SUPABASE_URL = 'https://ruxdxkytdykcuotwjeto.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_rjJRgkgk7fdZNg-fuhMj1g_CE6jXJhI'; 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -380,33 +379,55 @@
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
       inicializarGraficos();
-      carregarDadosDoSupabase();
+      carregarDadosDoSupabasePaginado();
     });
 
-    async function carregarDadosDoSupabase() {
-      atualizarStatusCarga("Sincronizando com o Supabase...");
+    // Função para puxar TODOS os registros em blocos de 1000 (contornando o limite do Supabase)
+    async function carregarDadosDoSupabasePaginado() {
+      atualizarStatusCarga("Sincronizando com o Supabase (puxando todos os registros)...");
       try {
-        const { data: emp, error: errEmp } = await supabaseClient.from('empregados').select('*');
-        if (!errEmp && emp) {
-          emp.forEach(e => { mapaEmpregados[e.matricula] = { cargo: e.cargo, filial: e.filial }; });
+        // Carregar Empregados
+        let allEmp = [];
+        let step = 1000, start = 0, end = 999;
+        while (true) {
+          const { data, error } = await supabaseClient.from('empregados').select('*').range(start, end);
+          if (error || !data || data.length === 0) break;
+          allEmp = allEmp.concat(data);
+          if (data.length < step) break;
+          start += step; end += step;
         }
+        allEmp.forEach(e => { mapaEmpregados[e.matricula] = { cargo: e.cargo, filial: e.filial }; });
 
-        const { data: atest, error: errAtest } = await supabaseClient.from('atestados').select('*');
-        if (!errAtest && atest) {
-          dadosAtestados = atest.map(d => ({
-            matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave, setor: d.setor,
-            dias: Number(d.dias), horas: Number(d.horas), cid: d.cid, postoAtendimento: d.posto_atendimento, atendente: d.atendente,
-            dataEmissao: d.data_emissao, dataTermino: d.data_termino, ano: d.ano, mes: d.mes
-          }));
+        // Carregar Atestados por Lotes de 1000
+        let allAtest = [];
+        start = 0; end = 999;
+        while (true) {
+          const { data, error } = await supabaseClient.from('atestados').select('*').range(start, end);
+          if (error || !data || data.length === 0) break;
+          allAtest = allAtest.concat(data);
+          if (data.length < step) break;
+          start += step; end += step;
         }
+        dadosAtestados = allAtest.map(d => ({
+          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave, setor: d.setor,
+          dias: Number(d.dias), horas: Number(d.horas), cid: d.cid, postoAtendimento: d.posto_atendimento, atendente: d.atendente,
+          dataEmissao: d.data_emissao, dataTermino: d.data_termino, ano: d.ano, mes: d.mes
+        }));
 
-        const { data: atend, error: errAtend } = await supabaseClient.from('atendimentos').select('*');
-        if (!errAtend && atend) {
-          dadosAtendimentos = atend.map(d => ({
-            matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave,
-            data: d.data, ano: d.ano, mes: d.mes, tipoExame: d.tipo_exame, posto: d.posto
-          }));
+        // Carregar Atendimentos por Lotes de 1000
+        let allAtend = [];
+        start = 0; end = 999;
+        while (true) {
+          const { data, error } = await supabaseClient.from('atendimentos').select('*').range(start, end);
+          if (error || !data || data.length === 0) break;
+          allAtend = allAtend.concat(data);
+          if (data.length < step) break;
+          start += step; end += step;
         }
+        dadosAtendimentos = allAtend.map(d => ({
+          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave,
+          data: d.data, ano: d.ano, mes: d.mes, tipoExame: d.tipo_exame, posto: d.posto
+        }));
 
         dadosFiltradosAtestados = [...dadosAtestados];
         dadosFiltradosAtendimentos = [...dadosAtendimentos];
@@ -488,7 +509,7 @@
           }
 
           alert(`${tipo} enviado e salvo no Supabase com sucesso!`);
-          carregarDadosDoSupabase();
+          carregarDadosDoSupabasePaginado();
         } catch (err) {
           console.error(err);
           alert("Erro ao enviar dados para o Supabase.");
