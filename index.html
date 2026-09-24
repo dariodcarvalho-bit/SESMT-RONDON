@@ -70,6 +70,8 @@
 
   <!-- APLICAÇÃO PRINCIPAL -->
   <div id="appPrincipal" class="hidden flex-col min-h-screen">
+    
+    <!-- CABEÇALHO -->
     <header class="bg-[#1e293b] text-white shadow-xl sticky top-0 z-40 border-b border-[#334155]">
       <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
         <div class="flex items-center gap-4">
@@ -101,32 +103,147 @@
       </div>
     </header>
 
+    <!-- NAVEGAÇÃO -->
     <nav class="bg-[#1e293b]/90 border-b border-[#334155] backdrop-blur-md sticky top-[68px] z-30">
       <div class="max-w-7xl mx-auto px-4 flex gap-6 text-xs font-medium text-slate-400 overflow-x-auto">
-        <button onclick="mudarAba('dashboard')" id="tab-dashboard" class="py-3 tab-active flex items-center gap-1.5 transition shrink-0 cursor-pointer"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard Executivo</button>
-        <button onclick="mudarAba('config')" id="tab-config" class="py-3 flex items-center gap-1.5 hover:text-slate-200 transition shrink-0 cursor-pointer"><i data-lucide="settings" class="w-4 h-4"></i> Configurações & Upload</button>
+        <button onclick="mudarAba('dashboard')" id="tab-dashboard" class="py-3 tab-active flex items-center gap-1.5 transition shrink-0 cursor-pointer">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard Executivo
+        </button>
+        <button onclick="mudarAba('comparativo')" id="tab-comparativo" class="py-3 flex items-center gap-1.5 hover:text-slate-200 transition shrink-0 cursor-pointer">
+          <i data-lucide="trending-up" class="w-4 h-4"></i> Comparativo Mês a Mês
+        </button>
+        <button onclick="mudarAba('prontuario')" id="tab-prontuario" class="py-3 flex items-center gap-1.5 hover:text-slate-200 transition shrink-0 cursor-pointer">
+          <i data-lucide="user-check" class="w-4 h-4"></i> Prontuário por Ficha
+        </button>
+        <button onclick="mudarAba('alertas')" id="tab-alertas" class="py-3 flex items-center gap-1.5 relative hover:text-slate-200 transition shrink-0 cursor-pointer">
+          <i data-lucide="bell" class="w-4 h-4"></i> Alertas Epidemiológicos
+        </button>
+        <button onclick="mudarAba('config')" id="tab-config" class="py-3 flex items-center gap-1.5 hover:text-slate-200 transition shrink-0 cursor-pointer">
+          <i data-lucide="settings" class="w-4 h-4"></i> Configurações & Upload
+        </button>
       </div>
     </nav>
 
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+      <!-- DASHBOARD -->
       <div id="sec-dashboard" class="space-y-6">
-        <div class="tab-bg-container text-center py-10">
-          <h2 class="text-lg font-bold text-emerald-400">Sistema Conectado com Sucesso!</h2>
-          <p class="text-xs text-slate-400 mt-2">Utilize as abas acima para navegar pelos relatórios e painéis.</p>
-        </div>
+        <section class="bg-[#1e293b] text-white p-5 rounded-xl shadow-lg border border-[#334155] flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs w-full">
+            <span class="font-bold text-emerald-400 flex items-center gap-1.5"><i data-lucide="filter" class="w-4 h-4"></i> Filtros:</span>
+            <select id="filtroAno" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold"><option value="">Todos os Anos</option></select>
+            <select id="filtroMes" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold">
+              <option value="">Todos os Meses</option>
+              <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+            <select id="filtroFilial" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold"><option value="">Todas as Lojas</option></select>
+            <select id="filtroSetor" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold"><option value="">Todos os Setores</option></select>
+            <select id="filtroCID" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold"><option value="">Todas as CIDs</option></select>
+            <button onclick="limparFiltros()" class="text-slate-400 hover:text-white underline text-xs font-semibold ml-2 cursor-pointer">Limpar</button>
+          </div>
+          <div class="flex items-center gap-2 w-full lg:w-auto justify-end shrink-0">
+            <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel</button>
+            <button onclick="exportarPDF()" class="bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><i data-lucide="download" class="w-4 h-4"></i> PDF</button>
+          </div>
+        </section>
+
+        <!-- CARDS SAÚDE MENTAL & LER/DORT -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="kpi-card bg-[#1e293b] p-5 rounded-2xl border-2 border-purple-500/40 shadow-xl flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <div></div>
+              <span class="text-xs font-extrabold text-purple-400 uppercase tracking-wider flex items-center gap-1.5 mx-auto">
+                <i data-lucide="brain" class="w-4 h-4 text-purple-400"></i> Saúde Mental (CID F00–F99)
+              </span>
+              <span id="kpiSMPercent" class="bg-purple-950 text-purple-300 border border-purple-800 text-xs font-bold px-2 py-0.5 rounded-lg">0.0%</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-700 text-center">
+              <div class="bg-[#0f172a] p-3 rounded-xl border border-slate-700"><span class="text-[11px] font-bold text-slate-400 block uppercase">Quantidade</span><span id="kpiSaudeMental" class="text-3xl font-black text-purple-300 mt-1 block">0</span></div>
+              <div class="bg-[#0f172a] p-3 rounded-xl border border-slate-700"><span class="text-[11px] font-bold text-slate-400 block uppercase">Dias Afastados</span><span id="kpiSMDias" class="text-3xl font-black text-amber-400 mt-1 block">0</span></div>
+              <div class="bg-[#0f172a] p-3 rounded-xl border border-slate-700"><span class="text-[11px] font-bold text-slate-400 block uppercase">Gravidade</span><span id="kpiSMIndice" class="text-3xl font-black text-slate-100 mt-1 block">0.0</span></div>
+            </div>
+          </div>
+
+          <div class="kpi-card bg-[#1e293b] p-5 rounded-2xl border-2 border-blue-500/40 shadow-xl flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <div></div>
+              <span class="text-xs font-extrabold text-blue-400 uppercase tracking-wider flex items-center gap-1.5 mx-auto">
+                <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> LER / DORT (CID M00–M99)
+              </span>
+              <span id="kpiLDPercent" class="bg-blue-950 text-blue-300 border border-blue-800 text-xs font-bold px-2 py-0.5 rounded-lg">0.0%</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-700 text-center">
+              <div class="bg-[#0f172a] p-3 rounded-xl border border-slate-700"><span class="text-[11px] font-bold text-slate-400 block uppercase">Quantidade</span><span id="kpiLerDort" class="text-3xl font-black text-blue-300 mt-1 block">0</span></div>
+              <div class="bg-[#0f172a] p-3 rounded-xl border border-slate-700"><span class="text-[11px] font-bold text-slate-400 block uppercase">Dias Afastados</span><span id="kpiLDDias" class="text-3xl font-black text-amber-400 mt-1 block">0</span></div>
+              <div class="bg-[#0f172a] p-3 rounded-xl border border-slate-700"><span class="text-[11px] font-bold text-slate-400 block uppercase">Gravidade</span><span id="kpiLDIndice" class="text-3xl font-black text-slate-100 mt-1 block">0.0</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- KPIS GERAIS -->
+        <section class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div class="kpi-card bg-[#1e293b] p-3.5 rounded-xl border border-[#334155]"><span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Total Atestados</span><span id="kpiTotalAtestados" class="text-xl font-extrabold text-slate-100">0</span></div>
+          <div class="kpi-card bg-[#1e293b] p-3.5 rounded-xl border border-[#334155]"><span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Dias Afastados</span><span id="kpiTotalDias" class="text-xl font-extrabold text-amber-400">0</span></div>
+          <div class="kpi-card bg-[#1e293b] p-3.5 rounded-xl border border-[#334155]"><span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Horas Atestado</span><span id="kpiTotalHoras" class="text-xl font-extrabold text-rose-400">0h</span></div>
+          <div class="kpi-card bg-[#1e293b] p-3.5 rounded-xl border border-[#334155]"><span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Afastados Únicos</span><span id="kpiFuncAfastados" class="text-xl font-extrabold text-indigo-400">0</span></div>
+          <div class="kpi-card bg-[#1e293b] p-3.5 rounded-xl border border-[#334155]"><span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Índice Gravidade</span><span id="kpiIndiceGravidade" class="text-xl font-extrabold text-slate-100">0.0</span></div>
+          <div class="kpi-card bg-[#1e293b] p-3.5 rounded-xl border border-[#334155]"><span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Exames Ocupac.</span><span id="kpiExamesOcupacionais" class="text-xl font-extrabold text-emerald-400">0</span></div>
+        </section>
+
+        <!-- GRÁFICOS -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="tab-bg-container flex flex-col"><h3 class="text-xs font-bold text-slate-200 mb-4 uppercase">Atestados por Loja</h3><div class="relative flex-1 min-h-[230px]"><canvas id="chartAtestadosPorLoja"></canvas></div></div>
+          <div class="tab-bg-container flex flex-col"><h3 class="text-xs font-bold text-slate-200 mb-4 uppercase">Dias Afastados por Loja</h3><div class="relative flex-1 min-h-[230px]"><canvas id="chartDiasPorLoja"></canvas></div></div>
+          <div class="tab-bg-container flex flex-col"><h3 class="text-xs font-bold text-slate-200 mb-4 uppercase">Atendimentos por Tipo</h3><div class="relative flex-1 min-h-[230px] flex items-center justify-center"><canvas id="chartAtendimentosPizza"></canvas></div></div>
+        </section>
+
+        <!-- TABELA DE ATESTADOS -->
+        <section class="tab-bg-container overflow-hidden flex flex-col space-y-3">
+          <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+            <h3 class="text-xs font-bold text-slate-200 uppercase">Atestados Processados</h3>
+            <input type="text" id="buscaTabela" oninput="filtrarTabelaTexto()" placeholder="Buscar colaborador..." class="text-xs p-1.5 border border-slate-600 rounded bg-[#0f172a] text-slate-200 w-48" />
+          </div>
+          <div class="overflow-x-auto max-h-[350px] rounded border border-slate-700 bg-[#0f172a]">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[#1e293b] text-slate-300 sticky top-0">
+                <tr><th class="p-2.5">Crachá</th><th class="p-2.5">Colaborador</th><th class="p-2.5">Loja</th><th class="p-2.5">Setor</th><th class="p-2.5 text-center">Qtde At.</th></tr>
+              </thead>
+              <tbody id="tabelaAtestadosBody" class="divide-y divide-slate-800 text-slate-300">
+                <tr><td colspan="5" class="p-4 text-center text-slate-500">A carregar dados do Supabase...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-      <div id="sec-config" class="hidden space-y-6">
-        <div class="tab-bg-container">
-          <h2 class="text-sm font-bold text-slate-100">Configurações</h2>
-        </div>
+
+      <!-- OUTRAS ABAS (MANTIDAS OCULTAS ATÉ CLIQUE) -->
+      <div id="sec-comparativo" class="hidden tab-bg-container"><h2>Módulo Comparativo</h2></div>
+      <div id="sec-prontuario" class="hidden tab-bg-container"><h2>Módulo Prontuário</h2></div>
+      <div id="sec-alertas" class="hidden tab-bg-container"><h2>Módulo Alertas</h2></div>
+      <div id="sec-config" class="hidden tab-bg-container space-y-4">
+        <h2 class="text-sm font-bold text-slate-100">Upload de Planilhas</h2>
+        <p class="text-xs text-slate-400">Envie seus arquivos Excel para atualizar o banco na nuvem.</p>
       </div>
+
     </main>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      lucide.createIcons();
-    });
+    const SUPABASE_URL = 'https://ruxdxkydykuotwjeto.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_rjJRgkgk7fdZNg-fuhMj1g_CE6jXJhI';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let dadosAtestados = [];
+    let dadosAtendimentos = [];
+    let dadosFiltradosAtestados = [];
+    let mapaEmpregados = {};
+    let dadosColaboradoresAgrupados = [];
+    let chartAtestadosInstancia = null;
+    let chartDiasInstancia = null;
+    let chartPizzaInstancia = null;
+
+    document.addEventListener("DOMContentLoaded", () => { lucide.createIcons(); });
 
     function toggleMostrarSenha() {
       const input = document.getElementById("loginSenha");
@@ -141,7 +258,7 @@
       lucide.createIcons();
     }
 
-    function realizarLogin() {
+    async function realizarLogin() {
       const u = document.getElementById("loginUsuario").value.trim();
       const s = document.getElementById("loginSenha").value.trim();
       const errEl = document.getElementById("erroLogin");
@@ -153,8 +270,9 @@
         document.getElementById("labelNomeUsuario").innerText = "Dário Carvalho (Master)";
         document.getElementById("labelPerfilUsuario").innerText = "Perfil: ADM";
         lucide.createIcons();
+        carregarDadosDoSupabase();
       } else {
-        errEl.innerText = "Usuário ou senha inválidos. Use dariodc e admin123";
+        errEl.innerText = "Utilizador ou senha inválidos.";
         errEl.classList.remove("hidden");
       }
     }
@@ -166,12 +284,130 @@
     }
 
     function mudarAba(aba) {
-      ['dashboard', 'config'].forEach(a => {
-        document.getElementById(`sec-${a}`).classList.add("hidden");
-        document.getElementById(`tab-${a}`).classList.remove("tab-active");
+      ['dashboard', 'comparativo', 'prontuario', 'alertas', 'config'].forEach(a => {
+        const sec = document.getElementById(`sec-${a}`);
+        const tab = document.getElementById(`tab-${a}`);
+        if(sec) sec.classList.add("hidden");
+        if(tab) tab.classList.remove("tab-active");
       });
-      document.getElementById(`sec-${aba}`).classList.remove("hidden");
-      document.getElementById(`tab-${aba}`).classList.add("tab-active");
+      const targetSec = document.getElementById(`sec-${aba}`);
+      const targetTab = document.getElementById(`tab-${aba}`);
+      if(targetSec) targetSec.classList.remove("hidden");
+      if(targetTab) targetTab.classList.add("tab-active");
+    }
+
+    async function carregarDadosDoSupabase() {
+      try {
+        const [resEmp, resAtend, resAtest] = await Promise.all([
+          supabaseClient.from('empregados').select('*'),
+          supabaseClient.from('atendimentos').select('*'),
+          supabaseClient.from('atestados').select('*')
+        ]);
+
+        dadosAtendimentos = resAtend.data || [];
+        dadosAtestados = (resAtest.data || []).map(item => {
+          const dias = parseFloat(item.dias) || 0;
+          return {
+            matricula: String(item.matricula || item.ficha || "").trim(),
+            nome: item.nome || "Colaborador",
+            setor: item.setor || "Administrativo",
+            lojaChave: item.filial || "Loja 1",
+            dias: dias,
+            cid: item.cid ? item.cid.trim().toUpperCase() : "SEM CID",
+            ano: "2026",
+            mes: "9"
+          };
+        });
+
+        dadosFiltradosAtestados = [...dadosAtestados];
+        recalcularDashboard();
+      } catch (err) {
+        console.error("Erro ao carregar do Supabase:", err);
+      }
+    }
+
+    function recalcularDashboard() {
+      const totalAtestados = dadosFiltradosAtestados.length;
+      const totalDias = dadosFiltradosAtestados.reduce((acc, curr) => acc + curr.dias, 0);
+      const funcUnicos = new Set(dadosFiltradosAtestados.map(d => d.matricula)).size;
+
+      document.getElementById("kpiTotalAtestados").innerText = totalAtestados;
+      document.getElementById("kpiTotalDias").innerText = totalDias;
+      document.getElementById("kpiFuncAfastados").innerText = funcUnicos;
+
+      agruparColaboradores();
+      renderizarTabela();
+      atualizarGraficos();
+    }
+
+    function agruparColaboradores() {
+      const mapa = {};
+      dadosFiltradosAtestados.forEach(item => {
+        if (!mapa[item.matricula]) {
+          mapa[item.matricula] = { matricula: item.matricula, nome: item.nome, filial: item.lojaChave, setor: item.setor, qtdeAtestados: 0 };
+        }
+        mapa[item.matricula].qtdeAtestados += 1;
+      });
+      dadosColaboradoresAgrupados = Object.values(mapa).sort((a,b) => b.qtdeAtestados - a.qtdeAtestados);
+    }
+
+    function renderizarTabela() {
+      const tbody = document.getElementById("tabelaAtestadosBody");
+      if (dadosColaboradoresAgrupados.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum registo encontrado.</td></tr>`;
+        return;
+      }
+      let html = "";
+      dadosColaboradoresAgrupados.forEach(row => {
+        html += `<tr class="hover:bg-[#1e293b]/70"><td class="p-2.5 font-bold text-emerald-400">${row.matricula}</td><td class="p-2.5 text-slate-100">${row.nome}</td><td class="p-2.5 text-slate-400">${row.filial}</td><td class="p-2.5">${row.setor}</td><td class="p-2.5 text-center font-bold text-emerald-400">${row.qtdeAtestados}</td></tr>`;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function filtrarTabelaTexto() {
+      const busca = document.getElementById("buscaTabela").value.toLowerCase().trim();
+      if (!busca) {
+        dadosFiltradosAtestados = [...dadosAtestados];
+      } else {
+        dadosFiltradosAtestados = dadosAtestados.filter(i => i.nome.toLowerCase().includes(busca) || i.matricula.includes(busca));
+      }
+      recalcularDashboard();
+    }
+
+    function limparFiltros() {
+      document.getElementById("buscaTabela").value = "";
+      dadosFiltradosAtestados = [...dadosAtestados];
+      recalcularDashboard();
+    }
+
+    function atualizarGraficos() {
+      const ctx1 = document.getElementById("chartAtestadosPorLoja").getContext("2d");
+      if (!chartAtestadosInstancia) {
+        chartAtestadosInstancia = new Chart(ctx1, { type: 'bar', data: { labels: ['Loja 1', 'Loja 2', 'Loja 3', 'Loja 4'], datasets: [{ data: [10, 5, 8, 3], backgroundColor: '#059669' }] }, options: { responsive: true, maintainAspectRatio: false } });
+      }
+      const ctx2 = document.getElementById("chartDiasPorLoja").getContext("2d");
+      if (!chartDiasInstancia) {
+        chartDiasInstancia = new Chart(ctx2, { type: 'bar', data: { labels: ['Loja 1', 'Loja 2', 'Loja 3', 'Loja 4'], datasets: [{ data: [30, 15, 20, 10], backgroundColor: '#d97706' }] }, options: { responsive: true, maintainAspectRatio: false } });
+      }
+      const ctx3 = document.getElementById("chartAtendimentosPizza").getContext("2d");
+      if (!chartPizzaInstancia) {
+        chartPizzaInstancia = new Chart(ctx3, { type: 'doughnut', data: { labels: ['Periódico', 'Admissional', 'Demissional'], datasets: [{ data: [12, 19, 3], backgroundColor: ['#3b82f6', '#10b981', '#6366f1'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+      }
+    }
+
+    function exportarExcel() {
+      const ws = XLSX.utils.json_to_sheet(dadosFiltradosAtestados);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Atestados");
+      XLSX.writeFile(wb, "Relatorio_SESMT.xlsx");
+    }
+
+    function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Relatório SESMT - Rondon", 14, 15);
+      doc.autoTable({ head: [['Crachá', 'Colaborador', 'Setor', 'Dias']], body: dadosFiltradosAtestados.map(d => [d.matricula, d.nome, d.setor, d.dias]), startY: 20 });
+      doc.save("Relatorio_SESMT.pdf");
     }
   </script>
 </body>
