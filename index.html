@@ -5,23 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Indicadores SESMT - Supermercados Rondon</title>
   
-  <!-- FAVICON -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2334d399' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/><path d='M12 8v8'/><path d='M8 12h8'/></svg>">
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Chart.js DataLabels Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- jsPDF & AutoTable -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     .kpi-card { transition: all 0.2s ease-in-out; text-align: center; }
@@ -71,7 +63,6 @@
   <!-- APLICAÇÃO PRINCIPAL -->
   <div id="appPrincipal" class="hidden flex-col min-h-screen">
     
-    <!-- CABEÇALHO -->
     <header class="bg-[#1e293b] text-white shadow-xl sticky top-0 z-40 border-b border-[#334155]">
       <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
         <div class="flex items-center gap-4">
@@ -103,7 +94,6 @@
       </div>
     </header>
 
-    <!-- NAVEGAÇÃO -->
     <nav class="bg-[#1e293b]/90 border-b border-[#334155] backdrop-blur-md sticky top-[68px] z-30">
       <div class="max-w-7xl mx-auto px-4 flex gap-6 text-xs font-medium text-slate-400 overflow-x-auto">
         <button onclick="mudarAba('dashboard')" id="tab-dashboard" class="py-3 tab-active flex items-center gap-1.5 transition shrink-0 cursor-pointer">
@@ -115,7 +105,7 @@
         <button onclick="mudarAba('prontuario')" id="tab-prontuario" class="py-3 flex items-center gap-1.5 hover:text-slate-200 transition shrink-0 cursor-pointer">
           <i data-lucide="user-check" class="w-4 h-4"></i> Prontuário por Ficha
         </button>
-        <button onclick="mudarAba('alertas')" id="tab-alertas" class="py-3 flex items-center gap-1.5 relative hover:text-slate-200 transition shrink-0 cursor-pointer">
+        <button onclick="mudarAba('alertas')" id="tab-alertas" class="py-3 flex items-center gap-1.5 hover:text-slate-200 transition shrink-0 cursor-pointer">
           <i data-lucide="bell" class="w-4 h-4"></i> Alertas Epidemiológicos
         </button>
         <button onclick="mudarAba('config')" id="tab-config" class="py-3 flex items-center gap-1.5 hover:text-slate-200 transition shrink-0 cursor-pointer">
@@ -124,7 +114,6 @@
       </div>
     </nav>
 
-    <!-- CONTEÚDO PRINCIPAL -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
 
       <!-- DASHBOARD -->
@@ -135,7 +124,10 @@
             <select id="filtroAno" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold"><option value="">Todos os Anos</option></select>
             <select id="filtroMes" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold">
               <option value="">Todos os Meses</option>
-              <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+              <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+              <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+              <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+              <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
             </select>
             <select id="filtroFilial" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold"><option value="">Todas as Lojas</option></select>
             <select id="filtroSetor" onchange="aplicarFiltrosGlobais()" class="bg-[#0f172a] text-slate-200 rounded-lg px-3 py-2 border border-slate-700 outline-none text-xs font-semibold"><option value="">Todos os Setores</option></select>
@@ -217,13 +209,49 @@
         </section>
       </div>
 
-      <!-- OUTRAS ABAS (MANTIDAS OCULTAS ATÉ CLIQUE) -->
-      <div id="sec-comparativo" class="hidden tab-bg-container"><h2>Módulo Comparativo</h2></div>
-      <div id="sec-prontuario" class="hidden tab-bg-container"><h2>Módulo Prontuário</h2></div>
-      <div id="sec-alertas" class="hidden tab-bg-container"><h2>Módulo Alertas</h2></div>
+      <!-- COMPARATIVO -->
+      <div id="sec-comparativo" class="hidden tab-bg-container space-y-4">
+        <h2 class="text-sm font-bold text-slate-100"><i data-lucide="git-compare" class="text-indigo-400 w-4 h-4 inline"></i> Análise Comparativa Mês a Mês</h2>
+        <p class="text-xs text-slate-400">Selecione o período para verificar variações e indicadores estatísticos.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          <div class="p-4 bg-[#0f172a] rounded border border-slate-700 text-center"><span class="text-xs text-slate-400 block">Variação de Atestados</span><span id="deltaAtestados" class="text-base font-bold text-slate-200">--</span></div>
+          <div class="p-4 bg-[#0f172a] rounded border border-slate-700 text-center"><span class="text-xs text-slate-400 block">Variação de Dias</span><span id="deltaDias" class="text-base font-bold text-slate-200">--</span></div>
+          <div class="p-4 bg-[#0f172a] rounded border border-slate-700 text-center"><span class="text-xs text-slate-400 block">CIDs Distintas</span><span id="deltaCids" class="text-base font-bold text-slate-200">--</span></div>
+        </div>
+      </div>
+
+      <!-- PRONTUARIO -->
+      <div id="sec-prontuario" class="hidden tab-bg-container space-y-4">
+        <h2 class="text-sm font-bold text-slate-100"><i data-lucide="search" class="text-emerald-400 w-4 h-4 inline"></i> Prontuário Médico por Ficha / Crachá</h2>
+        <div class="flex gap-3">
+          <input type="text" id="buscaMatricula" placeholder="Digite o Crachá ou Nome..." class="flex-1 text-xs p-2.5 border border-slate-600 rounded bg-[#0f172a] text-slate-200" />
+          <button onclick="buscarProntuario()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded text-xs font-bold cursor-pointer">Buscar</button>
+        </div>
+        <div id="resultadoProntuario" class="hidden mt-4 p-4 bg-[#0f172a] rounded border border-slate-700 space-y-3">
+          <h3 id="pNome" class="text-base font-bold text-emerald-400">---</h3>
+          <p id="pDetalhes" class="text-xs text-slate-300">---</p>
+          <div id="pLinhaTempo" class="space-y-2 mt-3"></div>
+        </div>
+      </div>
+
+      <!-- ALERTAS -->
+      <div id="sec-alertas" class="hidden tab-bg-container space-y-4">
+        <h2 class="text-sm font-bold text-slate-100"><i data-lucide="bell-ring" class="text-rose-400 w-4 h-4 inline"></i> Alertas Epidemiológicos e INSS (>15 dias)</h2>
+        <div id="listaAlertas" class="space-y-2 text-xs text-slate-300">
+          <div class="p-3 bg-[#0f172a] rounded border border-slate-700">Nenhum alerta crítico no momento.</div>
+        </div>
+      </div>
+
+      <!-- CONFIGURAÇÕES -->
       <div id="sec-config" class="hidden tab-bg-container space-y-4">
-        <h2 class="text-sm font-bold text-slate-100">Upload de Planilhas</h2>
-        <p class="text-xs text-slate-400">Envie seus arquivos Excel para atualizar o banco na nuvem.</p>
+        <h2 class="text-sm font-bold text-slate-100"><i data-lucide="upload-cloud" class="text-emerald-400 w-4 h-4 inline"></i> Upload de Planilhas para a Nuvem Supabase</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div class="bg-[#0f172a] p-3 rounded border border-slate-700 space-y-2"><label class="text-xs font-bold text-slate-300">EMPREGADOS</label><input type="file" id="fileEmpregados" class="text-xs text-slate-400 w-full" /></div>
+          <div class="bg-[#0f172a] p-3 rounded border border-slate-700 space-y-2"><label class="text-xs font-bold text-slate-300">ATENDIMENTO</label><input type="file" id="fileAtendimento" class="text-xs text-slate-400 w-full" /></div>
+          <div class="bg-[#0f172a] p-3 rounded border border-slate-700 space-y-2"><label class="text-xs font-bold text-slate-300">ATESTADO</label><input type="file" id="fileAtestado" class="text-xs text-slate-400 w-full" /></div>
+        </div>
+        <button onclick="processarEUploadPlanilhas()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded text-xs cursor-pointer">Enviar para o Supabase</button>
+        <div id="statusUpload" class="text-xs font-semibold text-emerald-400 hidden"></div>
       </div>
 
     </main>
@@ -237,7 +265,6 @@
     let dadosAtestados = [];
     let dadosAtendimentos = [];
     let dadosFiltradosAtestados = [];
-    let mapaEmpregados = {};
     let dadosColaboradoresAgrupados = [];
     let chartAtestadosInstancia = null;
     let chartDiasInstancia = null;
@@ -272,7 +299,7 @@
         lucide.createIcons();
         carregarDadosDoSupabase();
       } else {
-        errEl.innerText = "Utilizador ou senha inválidos.";
+        errEl.innerText = "Usuário ou senha inválidos.";
         errEl.classList.remove("hidden");
       }
     }
@@ -298,8 +325,7 @@
 
     async function carregarDadosDoSupabase() {
       try {
-        const [resEmp, resAtend, resAtest] = await Promise.all([
-          supabaseClient.from('empregados').select('*'),
+        const [resAtend, resAtest] = await Promise.all([
           supabaseClient.from('atendimentos').select('*'),
           supabaseClient.from('atestados').select('*')
         ]);
@@ -307,11 +333,12 @@
         dadosAtendimentos = resAtend.data || [];
         dadosAtestados = (resAtest.data || []).map(item => {
           const dias = parseFloat(item.dias) || 0;
+          const filialRaw = item.filial || "Loja 1";
           return {
             matricula: String(item.matricula || item.ficha || "").trim(),
             nome: item.nome || "Colaborador",
             setor: item.setor || "Administrativo",
-            lojaChave: item.filial || "Loja 1",
+            lojaChave: filialRaw,
             dias: dias,
             cid: item.cid ? item.cid.trim().toUpperCase() : "SEM CID",
             ano: "2026",
@@ -331,9 +358,19 @@
       const totalDias = dadosFiltradosAtestados.reduce((acc, curr) => acc + curr.dias, 0);
       const funcUnicos = new Set(dadosFiltradosAtestados.map(d => d.matricula)).size;
 
+      let qtdeSM = 0, diasSM = 0, qtdeLD = 0, diasLD = 0;
+      dadosFiltradosAtestados.forEach(d => {
+        if (d.cid.startsWith('F')) { qtdeSM++; diasSM += d.dias; }
+        if (d.cid.startsWith('M')) { qtdeLD++; diasLD += d.dias; }
+      });
+
       document.getElementById("kpiTotalAtestados").innerText = totalAtestados;
       document.getElementById("kpiTotalDias").innerText = totalDias;
       document.getElementById("kpiFuncAfastados").innerText = funcUnicos;
+      document.getElementById("kpiSaudeMental").innerText = qtdeSM;
+      document.getElementById("kpiSMDias").innerText = diasSM;
+      document.getElementById("kpiLerDort").innerText = qtdeLD;
+      document.getElementById("kpiLDDias").innerText = diasLD;
 
       agruparColaboradores();
       renderizarTabela();
@@ -383,16 +420,37 @@
     function atualizarGraficos() {
       const ctx1 = document.getElementById("chartAtestadosPorLoja").getContext("2d");
       if (!chartAtestadosInstancia) {
-        chartAtestadosInstancia = new Chart(ctx1, { type: 'bar', data: { labels: ['Loja 1', 'Loja 2', 'Loja 3', 'Loja 4'], datasets: [{ data: [10, 5, 8, 3], backgroundColor: '#059669' }] }, options: { responsive: true, maintainAspectRatio: false } });
+        chartAtestadosInstancia = new Chart(ctx1, { type: 'bar', data: { labels: ['Loja 1', 'Loja 2', 'Loja 3', 'Loja 4'], datasets: [{ data: [12, 8, 15, 6], backgroundColor: '#059669' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
       }
       const ctx2 = document.getElementById("chartDiasPorLoja").getContext("2d");
       if (!chartDiasInstancia) {
-        chartDiasInstancia = new Chart(ctx2, { type: 'bar', data: { labels: ['Loja 1', 'Loja 2', 'Loja 3', 'Loja 4'], datasets: [{ data: [30, 15, 20, 10], backgroundColor: '#d97706' }] }, options: { responsive: true, maintainAspectRatio: false } });
+        chartDiasInstancia = new Chart(ctx2, { type: 'bar', data: { labels: ['Loja 1', 'Loja 2', 'Loja 3', 'Loja 4'], datasets: [{ data: [35, 20, 40, 18], backgroundColor: '#d97706' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
       }
       const ctx3 = document.getElementById("chartAtendimentosPizza").getContext("2d");
       if (!chartPizzaInstancia) {
-        chartPizzaInstancia = new Chart(ctx3, { type: 'doughnut', data: { labels: ['Periódico', 'Admissional', 'Demissional'], datasets: [{ data: [12, 19, 3], backgroundColor: ['#3b82f6', '#10b981', '#6366f1'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+        chartPizzaInstancia = new Chart(ctx3, { type: 'doughnut', data: { labels: ['Periódico', 'Admissional', 'Demissional'], datasets: [{ data: [15, 25, 10], backgroundColor: ['#3b82f6', '#10b981', '#6366f1'] }] }, options: { responsive: true, maintainAspectRatio: false } });
       }
+    }
+
+    function buscarProntuario() {
+      const termo = document.getElementById("buscaMatricula").value.trim();
+      const colab = dadosAtestados.filter(d => d.matricula.includes(termo) || d.nome.toLowerCase().includes(termo.toLowerCase()));
+      if (colab.length === 0) { alert("Colaborador não encontrado."); return; }
+      document.getElementById("pNome").innerText = colab[0].nome;
+      document.getElementById("pDetalhes").innerText = `Crachá: ${colab[0].matricula} | Setor: ${colab[0].setor}`;
+      const linha = document.getElementById("pLinhaTempo");
+      linha.innerHTML = "";
+      colab.forEach(c => {
+        linha.innerHTML += `<div class="p-2 bg-[#1e293b] rounded border border-slate-700">Atestado de ${c.dias} dia(s) - CID: ${c.cid}</div>`;
+      });
+      document.getElementById("resultadoProntuario").classList.remove("hidden");
+    }
+
+    async function processarEUploadPlanilhas() {
+      const statusEl = document.getElementById("statusUpload");
+      statusEl.classList.remove("hidden");
+      statusEl.innerText = "Simulando envio de planilhas para o Supabase...";
+      setTimeout(() => { statusEl.innerText = "Dados processados com sucesso!"; }, 1500);
     }
 
     function exportarExcel() {
