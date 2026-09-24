@@ -377,7 +377,7 @@
     let paginaAtual = 1;
     const itensPorPagina = 50;
 
-    Chart.register(ChartDataLabels);
+    Chart.register(ChartDataalers || ChartDataLabels);
 
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
@@ -413,7 +413,7 @@
 
         dadosAtestados = allAtest.map((d, index) => {
           const mat = String(d.matricula || "").trim();
-          let filialOrigem = d.filial || d.loja_chave || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1");
+          let filialOrigem = String(d.filial || d.loja_chave || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1")).trim();
           let lojaChave = mapearChaveLoja(filialOrigem);
           let cargoFinal = d.cargo || (mapaEmpregados[mat] ? mapaEmpregados[mat].cargo : "");
 
@@ -447,7 +447,7 @@
         }
         dadosAtendimentos = allAtend.map((d, index) => {
           const mat = String(d.matricula || "").trim();
-          let filialOrigem = d.filial || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1");
+          let filialOrigem = String(d.filial || (mapaEmpregados[mat] ? mapaEmpregados[mat].filial : "1")).trim();
           return {
             matricula: mat,
             nome: d.nome || "Colaborador",
@@ -490,7 +490,7 @@
             const rows = json.map(row => ({
               matricula: String(row["Cadastro"] || row["Matrícula"] || row["Ficha Médica"] || "").trim(),
               cargo: row["Título Reduzido (Cargo)"] || row["Cargo"] || "",
-              filial: String(row["Filial"] || row["Apelido (Filial)"] || "1")
+              filial: String(row["Filial"] || row["Apelido (Filial)"] || "1").trim()
             })).filter(r => r.matricula);
             await supabaseClient.from('empregados').upsert(rows);
           } else if (tipo === 'ATESTADO') {
@@ -498,7 +498,7 @@
               const ficha = String(row["Ficha Médica"] || row["Matrícula"] || "").trim();
               const dtEmissaoRaw = row["Emissão Atestado"] || row["Data Emissão"] || "";
               const tempoAnoMes = extrairAnoEMes(dtEmissaoRaw);
-              const filialVal = String(row["Filial"] || row["Apelido (Filial)"] || "1");
+              const filialVal = String(row["Filial"] || row["Apelido (Filial)"] || "1").trim();
               const cargoVal = row["Cargo"] || "";
               return {
                 matricula: ficha,
@@ -523,7 +523,7 @@
             const rows = json.map(row => {
               const dtAtendRaw = row["Atendimento"] || row["Data Atendimento"] || "";
               const tempoAnoMes = extrairAnoEMes(dtAtendRaw);
-              const filialVal = String(row["Filial"] || "1");
+              const filialVal = String(row["Filial"] || "1").trim();
               return {
                 matricula: String(row["Ficha Médica"] || row["Matrícula"] || "").trim(),
                 nome: row["Nome (Ficha Médica)"] || row["Nome"] || "Colaborador",
@@ -607,10 +607,10 @@
 
     function mapearChaveLoja(filialRaw) {
       const str = String(filialRaw || "").trim().toUpperCase();
-      if (str.includes("10") || str.includes("LOJA 4") || str.includes("MATRIZ 4") || str === "4" || str === "10") return "Loja 4";
-      if (str.includes("9") || str.includes("LOJA 3") || str.includes("MATRIZ 3") || str === "3" || str === "9") return "Loja 3";
-      if (str.includes("8") || str.includes("LOJA 2") || str.includes("MATRIZ 2") || str === "2" || str === "8") return "Loja 2";
-      return "Loja 1";
+      if (str === "8" || str.includes("LOJA 2") || str.includes("MATRIZ 2")) return "Loja 2";
+      if (str === "9" || str.includes("LOJA 3") || str.includes("MATRIZ 3")) return "Loja 3";
+      if (str === "10" || str === "4" || str.includes("LOJA 4") || str.includes("MATRIZ 4")) return "Loja 4";
+      return "Loja 1"; // Se for 1 ou qualquer outra não especificada
     }
 
     function MapearSetorPorCargo(cargo) {
@@ -785,13 +785,51 @@
 
     let charts = {};
     function inicializarGraficos() {
-      charts.atestLoja = new Chart(document.getElementById("chartAtestadosPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ label: 'Atestados', data: [0,0,0,0], backgroundColor: "#059669" }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.diasLoja = new Chart(document.getElementById("chartDiasPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ label: 'Dias Afastados', data: [0,0,0,0], backgroundColor: "#d97706" }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.atend = new Chart(document.getElementById("chartAtendimentosPizza"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899"] }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.setor = new Chart(document.getElementById("chartSetores"), { type: 'bar', data: { labels: [], datasets: [{ label: 'Absenteísmo', data: [], backgroundColor: "#0284c7" }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.cid = new Chart(document.getElementById("chartCid"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#e11d48", "#f97316", "#10b981", "#8b5cf6", "#3b82f6"] }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.postos = new Chart(document.getElementById("chartPostos"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#0ea5e9", "#14b8a6", "#f43f5e", "#8b5cf6"] }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.comparativo = new Chart(document.getElementById("chartComparativoMes"), { type: 'line', data: { labels: [], datasets: [{ label: 'Atestados', data: [], borderColor: '#34d399', backgroundColor: '#34d399', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false } });
+      const optionsComum = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#ffffff' } },
+          datalabels: {
+            color: '#ffffff',
+            formatter: (value, ctx) => {
+              const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+              const percentage = sum > 0 ? ((value * 100) / sum).toFixed(1) + "%" : "0%";
+              return percentage + '\n(' + value + ')';
+            },
+            font: { weight: 'bold', size: 10 }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#ffffff' }, grid: { color: '#334155' } },
+          y: { ticks: { color: '#ffffff' }, grid: { color: '#334155' } }
+        }
+      };
+
+      const optionsPizza = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#ffffff' } },
+          datalabels: {
+            color: '#ffffff',
+            formatter: (value, ctx) => {
+              const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+              const percentage = sum > 0 ? ((value * 100) / sum).toFixed(1) + "%" : "0%";
+              return percentage + '\n(' + value + ')';
+            },
+            font: { weight: 'bold', size: 10 }
+          }
+        }
+      };
+
+      charts.atestLoja = new Chart(document.getElementById("chartAtestadosPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ label: 'Atestados', data: [0,0,0,0], backgroundColor: "#059669" }] }, options: optionsComum });
+      charts.diasLoja = new Chart(document.getElementById("chartDiasPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ label: 'Dias Afastados', data: [0,0,0,0], backgroundColor: "#d97706" }] }, options: optionsComum });
+      charts.atend = new Chart(document.getElementById("chartAtendimentosPizza"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899"] }] }, options: optionsPizza });
+      charts.setor = new Chart(document.getElementById("chartSetores"), { type: 'bar', data: { labels: [], datasets: [{ label: 'Absenteísmo', data: [], backgroundColor: "#0284c7" }] }, options: optionsComum });
+      charts.cid = new Chart(document.getElementById("chartCid"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#e11d48", "#f97316", "#10b981", "#8b5cf6", "#3b82f6"] }] }, options: optionsPizza });
+      charts.postos = new Chart(document.getElementById("chartPostos"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#0ea5e9", "#14b8a6", "#f43f5e", "#8b5cf6"] }] }, options: optionsPizza });
+      charts.comparativo = new Chart(document.getElementById("chartComparativoMes"), { type: 'line', data: { labels: [], datasets: [{ label: 'Atestados', data: [], borderColor: '#34d399', backgroundColor: '#34d399', tension: 0.3 }] }, options: optionsComum });
     }
 
     function atualizarGraficos() {
