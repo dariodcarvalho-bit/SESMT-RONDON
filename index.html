@@ -425,9 +425,9 @@
           start += step; end += step;
         }
         dadosAtestados = allAtest.map(d => ({
-          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave, setor: d.setor,
+          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave || mapearChaveLoja(d.filial), setor: d.setor || MapearSetorPorCargo(d.cargo),
           dias: Number(d.dias), horas: Number(d.horas), cid: d.cid, postoAtendimento: d.posto_atendimento, atendente: d.atendente,
-          dataEmissao: d.data_emissao, dataTermino: d.data_termino, ano: d.ano, mes: d.mes
+          dataEmissao: d.data_emissao, dataTermino: d.data_termino, ano: String(d.ano || ''), mes: String(d.mes || '')
         }));
 
         let allAtend = [];
@@ -440,8 +440,8 @@
           start += step; end += step;
         }
         dadosAtendimentos = allAtend.map(d => ({
-          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave,
-          data: d.data, ano: d.ano, mes: d.mes, tipoExame: d.tipo_exame, posto: d.posto
+          matricula: d.matricula, nome: d.nome, cargo: d.cargo, filial: d.filial, lojaChave: d.loja_chave || mapearChaveLoja(d.filial),
+          data: d.data, ano: String(d.ano || ''), mes: String(d.mes || ''), tipoExame: d.tipo_exame, posto: d.posto
         }));
 
         dadosFiltradosAtestados = [...dadosAtestados];
@@ -573,26 +573,36 @@
         const d = XLSX.SSF.parse_date_code(dataRaw);
         if (d) return { ano: String(d.y), mes: String(d.m) };
       } else {
-        const parts = String(dataRaw).split('T')[0].split(' ')[0].split('-');
-        if (parts.length === 3) return { ano: parts[0], mes: String(parseInt(parts[1])) };
+        const str = String(dataRaw).trim();
+        if (str.includes('/')) {
+          const parts = str.split(' ')[0].split('/');
+          if (parts.length === 3) return { ano: parts[2], mes: String(parseInt(parts[1])) };
+        } else if (str.includes('-')) {
+          const parts = str.split('T')[0].split(' ')[0].split('-');
+          if (parts.length === 3) return { ano: parts[0], mes: String(parseInt(parts[1])) };
+        }
       }
       return { ano: "", mes: "" };
     }
 
     function mapearChaveLoja(filialRaw) {
       const str = String(filialRaw || "").trim().toUpperCase();
-      if (str.includes("8") || str.includes("LOJA 2")) return "Loja 2";
-      if (str.includes("9") || str.includes("LOJA 3")) return "Loja 3";
-      if (str.includes("10") || str.includes("LOJA 4")) return "Loja 4";
+      if (str.includes("8") || str.includes("LOJA 2") || str.includes("MATRIZ 2") || str.includes("FILIAL 2")) return "Loja 2";
+      if (str.includes("9") || str.includes("LOJA 3") || str.includes("MATRIZ 3") || str.includes("FILIAL 3")) return "Loja 3";
+      if (str.includes("10") || str.includes("LOJA 4") || str.includes("MATRIZ 4") || str.includes("FILIAL 4")) return "Loja 4";
+      if (str.includes("2") && !str.includes("8") && !str.includes("9") && !str.includes("10")) return "Loja 2";
+      if (str.includes("3") && !str.includes("9")) return "Loja 3";
+      if (str.includes("4") && !str.includes("10")) return "Loja 4";
       return "Loja 1";
     }
 
     function MapearSetorPorCargo(cargo) {
       const cNorm = String(cargo || "").toUpperCase();
-      if (cNorm.includes("CAIXA") || cNorm.includes("FRENTE")) return "Frente de Loja";
-      if (cNorm.includes("ACO") || cNorm.includes("PERECIVEL")) return "Açougue";
-      if (cNorm.includes("REPOSITOR") || cNorm.includes("GERENTE")) return "Reposição";
-      return "Administrativo";
+      if (cNorm.includes("CAIXA") || cNorm.includes("FRENTE") || cNorm.includes("OPERADOR") || cNorm.includes("ATENDENTE")) return "Frente de Loja";
+      if (cNorm.includes("ACO") || cNorm.includes("PERECIVEL") || cNorm.includes("CARNE") || cNorm.includes("PADARIA") || cNorm.includes("AÇOUGUE")) return "Açougue";
+      if (cNorm.includes("REPOSITOR") || cNorm.includes("ESTOQUE") || cNorm.includes("CONFERENTE")) return "Reposição";
+      if (cNorm.includes("GERENTE") || cNorm.includes("ADMINISTRATIVO") || cNorm.includes("ASSISTENTE") || cNorm.includes("SUPERVISOR")) return "Administrativo";
+      return "Outros Setores";
     }
 
     function parseHorasPuras(v) { return parseFloat(v) || 0; }
@@ -761,10 +771,10 @@
     function inicializarGraficos() {
       charts.atestLoja = new Chart(document.getElementById("chartAtestadosPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ data: [0,0,0,0], backgroundColor: "#059669" }] }, options: { responsive: true, maintainAspectRatio: false } });
       charts.diasLoja = new Chart(document.getElementById("chartDiasPorLoja"), { type: 'bar', data: { labels: ["Loja 1", "Loja 2", "Loja 3", "Loja 4"], datasets: [{ data: [0,0,0,0], backgroundColor: "#d97706" }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.atend = new Chart(document.getElementById("chartAtendimentosPizza"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#3b82f6", "#10b981", "#8b5cf6"] }] }, options: { responsive: true, maintainAspectRatio: false } });
+      charts.atend = new Chart(document.getElementById("chartAtendimentosPizza"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899"] }] }, options: { responsive: true, maintainAspectRatio: false } });
       charts.setor = new Chart(document.getElementById("chartSetores"), { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: "#0284c7" }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.cid = new Chart(document.getElementById("chartCid"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#e11d48", "#f97316", "#10b981"] }] }, options: { responsive: true, maintainAspectRatio: false } });
-      charts.postos = new Chart(document.getElementById("chartPostos"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#0ea5e9", "#14b8a6"] }] }, options: { responsive: true, maintainAspectRatio: false } });
+      charts.cid = new Chart(document.getElementById("chartCid"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#e11d48", "#f97316", "#10b981", "#8b5cf6", "#3b82f6"] }] }, options: { responsive: true, maintainAspectRatio: false } });
+      charts.postos = new Chart(document.getElementById("chartPostos"), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ["#0ea5e9", "#14b8a6", "#f43f5e", "#8b5cf6"] }] }, options: { responsive: true, maintainAspectRatio: false } });
       charts.comparativo = new Chart(document.getElementById("chartComparativoMes"), { type: 'line', data: { labels: [], datasets: [{ label: 'Atestados', data: [], borderColor: '#34d399', backgroundColor: '#34d399', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false } });
     }
 
@@ -773,9 +783,9 @@
       let d1 = 0, d2 = 0, d3 = 0, d4 = 0;
       dadosFiltradosAtestados.forEach(d => {
         if (d.lojaChave === "Loja 1") { l1++; d1 += d.dias; }
-        if (d.lojaChave === "Loja 2") { l2++; d2 += d.dias; }
-        if (d.lojaChave === "Loja 3") { l3++; d3 += d.dias; }
-        if (d.lojaChave === "Loja 4") { l4++; d4 += d.dias; }
+        else if (d.lojaChave === "Loja 2") { l2++; d2 += d.dias; }
+        else if (d.lojaChave === "Loja 3") { l3++; d3 += d.dias; }
+        else if (d.lojaChave === "Loja 4") { l4++; d4 += d.dias; }
       });
       charts.atestLoja.data.datasets[0].data = [l1, l2, l3, l4]; charts.atestLoja.update();
       charts.diasLoja.data.datasets[0].data = [d1, d2, d3, d4]; charts.diasLoja.update();
@@ -824,6 +834,7 @@
       const mesesOrdenados = Object.keys(porMes).sort((a,b) => Number(a) - Number(b));
       const labels = mesesOrdenados.map(m => mesesMap[m] || m);
       const dataAtestados = mesesOrdenados.map(m => porMes[m].atestados);
+      const dataDias = mesesOrdenados.map(m => porMes[m].dias);
 
       charts.comparativo.data.labels = labels;
       charts.comparativo.data.datasets[0].data = dataAtestados;
@@ -832,9 +843,20 @@
       if (mesesOrdenados.length >= 2) {
         const ultimo = porMes[mesesOrdenados[mesesOrdenados.length-1]].atestados;
         const penultimo = porMes[mesesOrdenados[mesesOrdenados.length-2]].atestados;
-        const variacao = penultimo > 0 ? (((ultimo - penultimo) / penultimo) * 100).toFixed(1) : 0;
-        document.getElementById("deltaAtestados").innerText = (variacao >= 0 ? "+" : "") + variacao + "%";
-        document.getElementById("deltaCids").innerText = porMes[mesesOrdenados[mesesOrdenados.length-1]].cids.size;
+        const variacaoAtestados = penultimo > 0 ? (((ultimo - penultimo) / penultimo) * 100).toFixed(1) : 0;
+        
+        const ultimoDias = porMes[mesesOrdenados[mesesOrdenados.length-1]].dias;
+        const penultimoDias = porMes[mesesOrdenados[mesesOrdenados.length-2]].dias;
+        const variacaoDias = penultimoDias > 0 ? (((ultimoDias - penultimoDias) / penultimoDias) * 100).toFixed(1) : 0;
+
+        document.getElementById("deltaAtestados").innerText = (variacaoAtestados >= 0 ? "+" : "") + variacaoAtestados + "%";
+        document.getElementById("deltaDias").innerText = (variacaoDias >= 0 ? "+" : "") + variacaoDias + "%";
+        
+        const todasCidsAte = new Set();
+        mesesOrdenados.forEach(m => {
+          porMes[m].cids.forEach(c => todasCidsAte.add(c));
+        });
+        document.getElementById("deltaCids").innerText = todasCidsAte.size;
       }
     }
 
